@@ -1,0 +1,19 @@
+{
+    "data": [
+    {
+      "Field1": "Value1A",
+      "Field2": "Value2A",
+      "Field3": "Value3A"
+    },
+    {
+      "Field1": "Value1B",
+      "Field2": "Value2B",
+      "Field3": "Value3B"
+    },
+    {
+      "Field1": "Value1C",
+      "Field2": "Value2C",
+      "Field3": "Value3C"
+    }
+  ]
+}
