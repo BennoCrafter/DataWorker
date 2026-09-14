@@ -760,7 +760,7 @@ tr:hover .row-resize-handle,
 	background: transparent;
 	color: var(--label-primary);
 	font: inherit;
-	padding: 9px 10px;
+	padding: 11px 10px;
 	resize: none;
 }
 .cell-input:focus {

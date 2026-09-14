@@ -81,6 +81,12 @@ function persistColumnWidth(id, key, width) {
 	saveConfig();
 }
 
+/** Drops a dragged column width, returning that column to its default (flexible) sizing. */
+function forgetColumnWidth(id, key) {
+	delete config.libraryViews?.[id]?.columnWidths?.[key];
+	saveConfig();
+}
+
 /** Row heights (px, by record id) the user has dragged for this library — each row independent. */
 function rowHeights(id) {
 	return config.libraryViews?.[id]?.rowHeights ?? {};
@@ -116,6 +122,17 @@ export async function initLibraryApp() {
 	onLanguageChange(() => {
 		renderSidebar();
 		renderLibraryView();
+	});
+	// unpinned columns' widths (see renderTableWrap) are computed once from the available width
+	// at render time, so anything that changes that width — the window resizing, or the sidebar
+	// being dragged (main.js re-dispatches "resize" once that drag ends) — needs a re-render to
+	// recompute them, or they'd keep the stale share size from before
+	let resizeTimer = null;
+	window.addEventListener("resize", () => {
+		clearTimeout(resizeTimer);
+		resizeTimer = setTimeout(() => {
+			if (libState.current) renderLibraryView();
+		}, 150);
 	});
 	await loadLibraries();
 }
@@ -274,16 +291,24 @@ function renderTableWrap(library) {
 	table.className = "lib-table";
 
 	const widths = columnWidths(library.id);
+	// Every <col> needs a real pixel width, not just the ones the user dragged — leaving a column
+	// unset makes table-layout:fixed size it off its cell's *default* intrinsic width instead
+	// (`.cell-input`'s own width:100% can't resolve without a definite column width to resolve
+	// against, so the browser falls back to ~20 characters' worth per input), overshooting the
+	// wrap and forcing pointless horizontal scroll. So: pinned fields keep the width the user
+	// dragged to, and every other field splits whatever's left over evenly — computed here rather
+	// than left to the browser, which is what min-width:100% used to do for every column
+	// indiscriminately, restretching a column *just* dragged narrow back out on the next render.
+	const pinnedSum = library.fields.reduce((sum, f) => sum + (widths[f.key] ?? 0), 0);
+	const unpinnedCount = library.fields.filter((f) => widths[f.key] == null).length;
+	const available = $("library-view").clientWidth - pinnedSum - ACTIONS_COLUMN_WIDTH;
+	const shareWidth = unpinnedCount > 0 ? Math.max(MIN_COLUMN_WIDTH, available / unpinnedCount) : MIN_COLUMN_WIDTH;
+
 	const colgroup = document.createElement("colgroup");
 	const cols = {};
 	for (const field of library.fields) {
 		const col = document.createElement("col");
-		// only columns the user has actually dragged get a pinned pixel width; the rest are
-		// left unsized so table-layout:fixed shares the leftover space among them (same as
-		// letting the whole table stretch used to do) — otherwise EVERY column, including ones
-		// just dragged narrow, would get stretched to fill that leftover space too, which is
-		// exactly what used to make a shrunk column keep re-expanding back out.
-		if (widths[field.key] != null) col.style.width = `${widths[field.key]}px`;
+		col.style.width = `${widths[field.key] ?? shareWidth}px`;
 		cols[field.key] = col;
 		colgroup.append(col);
 	}
@@ -315,7 +340,14 @@ function renderTableWrap(library) {
 
 		const col = cols[field.key];
 		const resizeHandle = el("span", "col-resize-handle");
+		resizeHandle.title = t("library.resetColumnWidthTitle");
 		resizeHandle.onclick = (event) => event.stopPropagation();
+		resizeHandle.ondblclick = (event) => {
+			event.stopPropagation();
+			forgetColumnWidth(library.id, field.key);
+			const current = $("library-view").querySelector(".lib-table-wrap");
+			if (current) current.replaceWith(renderTableWrap(library));
+		};
 		resizeHandle.onmousedown = (event) => {
 			event.stopPropagation();
 			const startX = event.clientX;
@@ -362,6 +394,12 @@ function renderTableWrap(library) {
 /** Appends a thin resize-grab strip to the bottom of `td` — dragging it resizes only this row. */
 function attachRowResizeHandle(td, tr, library, record) {
 	const handle = el("div", "row-resize-handle");
+	handle.title = t("library.resetRowHeightTitle");
+	handle.ondblclick = (event) => {
+		event.stopPropagation();
+		forgetRowHeight(library.id, record.id);
+		tr.style.height = "";
+	};
 	handle.onmousedown = (event) => {
 		event.stopPropagation();
 		const startY = event.clientY;

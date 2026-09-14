@@ -59,6 +59,10 @@ function initSidebarResize() {
 				handle.classList.remove("resizing");
 				config.sidebarWidth = Math.round(sidebar.getBoundingClientRect().width);
 				saveConfig();
+				// the library table's unpinned columns size themselves off the space left over
+				// once the sidebar takes its share (see renderTableWrap in library.js) — that
+				// changed, so make them recompute
+				window.dispatchEvent(new Event("resize"));
 			},
 		});
 	};

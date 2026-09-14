@@ -30,6 +30,8 @@ const STRINGS = {
 		"library.manageFieldsTitle": "Manage Fields…",
 		"library.exportCsvTitle": "Export as CSV…",
 		"library.newRecord": "New Entry",
+		"library.resetColumnWidthTitle": "Double-click to reset width",
+		"library.resetRowHeightTitle": "Double-click to reset row height",
 
 		"record.openTitle": "Open entry",
 		"record.deleteTitle": "Delete entry",
@@ -127,6 +129,8 @@ const STRINGS = {
 		"library.manageFieldsTitle": "Felder verwalten…",
 		"library.exportCsvTitle": "Als CSV exportieren…",
 		"library.newRecord": "Neuer Eintrag",
+		"library.resetColumnWidthTitle": "Doppelklick setzt die Breite zurück",
+		"library.resetRowHeightTitle": "Doppelklick setzt die Zeilenhöhe zurück",
 
 		"record.openTitle": "Eintrag öffnen",
 		"record.deleteTitle": "Eintrag löschen",
