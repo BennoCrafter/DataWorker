@@ -1,6 +1,3 @@
 .DS_Store
 dist/
 version.json
-
-# grandpa's real Bento exports — personal data, never committed
-/bento daten/
