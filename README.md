@@ -11,10 +11,7 @@
 
 </div>
 
-**DataWorker** is a modern and simple replacement for **Bento**, the discontinued personal database app by FileMaker/Claris.
-
-Bento made it easy to create small, flexible databases without a complicated setup. DataWorker follows the same idea:
-
+**DataWorker** is a modern replacement for **Bento**, the discontinued personal database app by FileMaker/Claris.
 
 ---
 
@@ -26,6 +23,8 @@ Bento made it easy to create small, flexible databases without a complicated set
 |     Create and manage your libraries     |     Edit and organize records    |
 
 ## Features
+
+Bento made it easy to create small, flexible databases without a complicated setup. DataWorker follows the same idea:
 
 * Create a **library** for anything you want to organize
 * Add your own fields
