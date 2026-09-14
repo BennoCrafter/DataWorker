@@ -642,10 +642,11 @@ table.lib-table {
 	   (shrink) every OTHER column's width whenever one column got dragged wider. min-width
 	   lets the table size itself to the sum of the colgroup's widths instead, growing past the
 	   wrap's width when needed (.lib-table-wrap scrolls horizontally) so each column keeps
-	   exactly the width it was dragged to. The other direction (fewer/narrower columns than the
-	   wrap is wide) is handled by the trailing unsized spacer column below, not by this rule —
-	   min-width:100% alone would make table-layout:fixed distribute that slack across the SIZED
-	   columns instead, stretching every one of them past the width it was set to. */
+	   exactly the width it was dragged to. This still lets the table fill (or overfill) the
+	   wrap normally: only columns the user has actually dragged get a pinned <col> width (see
+	   library.js) — every other column stays unsized, so table-layout:fixed shares any leftover
+	   width among just those, the same stretching behavior as before resizing existed, instead
+	   of also re-stretching columns that were deliberately dragged narrow. */
 	min-width: 100%;
 	width: max-content;
 	table-layout: fixed;
@@ -683,13 +684,6 @@ table.lib-table th .sort-arrow {
 table.lib-table th.actions-col {
 	cursor: default;
 	width: 64px;
-}
-/* trailing unsized column (see colgroup in library.js) that soaks up any leftover width instead
-   of table-layout:fixed stretching it across the sized columns */
-table.lib-table th.spacer-col,
-table.lib-table td.spacer-col {
-	padding: 0;
-	cursor: default;
 }
 /* dragging the right edge of a header resizes that column (see colgroup in library.js) */
 .col-resize-handle {

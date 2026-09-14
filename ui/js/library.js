@@ -7,7 +7,6 @@ import { $, el, lucideIcon, postJson, refreshIcons, startDrag } from "./util.js"
 import { currentLanguage, onLanguageChange, t } from "./i18n.js";
 import { config, saveConfig } from "./config.js";
 
-const DEFAULT_COLUMN_WIDTH = 160;
 const MIN_COLUMN_WIDTH = 64;
 const ACTIONS_COLUMN_WIDTH = 64;
 const MIN_ROW_HEIGHT = 32;
@@ -279,19 +278,18 @@ function renderTableWrap(library) {
 	const cols = {};
 	for (const field of library.fields) {
 		const col = document.createElement("col");
-		col.style.width = `${widths[field.key] ?? DEFAULT_COLUMN_WIDTH}px`;
+		// only columns the user has actually dragged get a pinned pixel width; the rest are
+		// left unsized so table-layout:fixed shares the leftover space among them (same as
+		// letting the whole table stretch used to do) — otherwise EVERY column, including ones
+		// just dragged narrow, would get stretched to fill that leftover space too, which is
+		// exactly what used to make a shrunk column keep re-expanding back out.
+		if (widths[field.key] != null) col.style.width = `${widths[field.key]}px`;
 		cols[field.key] = col;
 		colgroup.append(col);
 	}
 	const actionsCol = document.createElement("col");
 	actionsCol.style.width = `${ACTIONS_COLUMN_WIDTH}px`;
 	colgroup.append(actionsCol);
-	// no width set — table-layout:fixed gives every unsized column an equal share of whatever
-	// width is left over. Without this, min-width:100% (below wrap-width tables should still
-	// fill the view) forces the browser to stretch it out over the SIZED columns instead,
-	// proportionally widening every column — including ones just dragged narrow — to fill the
-	// gap. This column silently absorbs that leftover space so the real columns stay exact.
-	colgroup.append(document.createElement("col"));
 	table.append(colgroup);
 
 	const typeLabel = Object.fromEntries(fieldTypes().map((ft) => [ft.value, ft.label]));
@@ -321,11 +319,11 @@ function renderTableWrap(library) {
 		resizeHandle.onmousedown = (event) => {
 			event.stopPropagation();
 			const startX = event.clientX;
-			const startWidth = col.getBoundingClientRect().width;
-			// tracked directly rather than re-measured from `col` at drop time — a <col>
-			// element isn't a real rendered box, so its post-drag getBoundingClientRect() can
-			// disagree with the width this handler actually set (e.g. under the min-width:100%
-			// stretch this table used to be subject to), persisting a value nobody dragged to
+			// measured from `th`, not `col` — a <col> isn't a real rendered box (and this one
+			// may not even have an explicit width yet, see above), so it can't be trusted to
+			// report the width it's actually showing right now
+			const startWidth = th.getBoundingClientRect().width;
+			// tracked directly rather than re-measured at drop time, for the same reason
 			let width = startWidth;
 			resizeHandle.classList.add("resizing");
 			startDrag(event, {
@@ -346,7 +344,6 @@ function renderTableWrap(library) {
 	const actionsTh = document.createElement("th");
 	actionsTh.className = "actions-col";
 	headRow.append(actionsTh);
-	headRow.append(el("th", "spacer-col"));
 	thead.append(headRow);
 	table.append(thead);
 
@@ -411,7 +408,6 @@ function renderRow(library, record, height) {
 	attachRowResizeHandle(actionsTd, tr, library, record);
 
 	tr.append(actionsTd);
-	tr.append(el("td", "spacer-col"));
 	return tr;
 }
 
