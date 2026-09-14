@@ -1,14 +1,16 @@
 /**
- * Boot and wiring: loads config, applies the theme, renders the chrome, and binds global
- * click-away handling and keyboard shortcuts.
+ * Boot and wiring: loads config, applies the theme, renders the chrome, and binds the update
+ * button, global click-away handling and keyboard shortcuts.
  *
- * The template's component-download / self-update / activity-popover machinery is left out of
- * this app's wiring on purpose — app.config.ts has those features off, so it would never have
- * anything to show.
+ * The template's downloaded-components machinery stays out of this app's wiring — features.
+ * components is off and always will be (this app ships everything it needs) — but updates is
+ * on, so its background check + activity-popover progress are wired up below.
  */
-import { refreshIcons } from "./util.js";
+import { $, refreshIcons } from "./util.js";
 import { setConfig } from "./config.js";
 import { state } from "./state.js";
+import { renderActivity } from "./activity.js";
+import { initUpdate } from "./update.js";
 import { applyStatusLabels } from "./status.js";
 import { applyTheme, initSettings, renderSettings } from "./settings.js";
 import { ensurePrerequisites } from "./prereqs.js";
@@ -31,13 +33,27 @@ async function init() {
 
 	const status = await fetch("/api/status").then((r) => r.json());
 	applyStatusLabels(status);
+	renderActivity();
 	initSettings();
 
 	await initLibraryApp();
+
+	if (status.features?.updates) initUpdate(); // background — shows the header Update button when something newer is published
 }
 init();
 
+$("activity-btn").onclick = (event) => {
+	// stop the bubble: renderActivity() replaces the button's children, detaching event.target,
+	// which would make the document handler below treat this click as "outside" and re-close it
+	event.stopPropagation();
+	state.showActivity = !state.showActivity;
+	renderActivity();
+};
 document.addEventListener("click", (event) => {
+	if (state.showActivity && !event.target.closest("#activity-wrap")) {
+		state.showActivity = false;
+		renderActivity();
+	}
 	// a detached target means a popover-internal click whose handler re-rendered the popover
 	// (replacing the clicked button) — that is never a click-away
 	if (state.showSettings && event.target.isConnected && !event.target.closest("#settings-wrap")) {
@@ -59,6 +75,7 @@ const MOD_SHORTCUTS = {
 };
 const MOD_SHIFT_SHORTCUTS = {
 	"n": "new-library",
+	"a": "toggle-activity",
 };
 
 document.addEventListener("keydown", (event) => {

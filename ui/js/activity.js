@@ -50,6 +50,9 @@ export function activityError(message) {
 
 export function renderActivity() {
 	const a = state.activity;
+	// this app has nothing to report when idle — only take up topbar space while there's an
+	// actual update in progress, done, or failed (or the user explicitly reopened the popover)
+	$("activity-wrap").classList.toggle("hidden", a.phase === "idle" && !state.showActivity);
 	const button = $("activity-btn");
 	button.replaceChildren();
 	const dot = el("span", "dot");

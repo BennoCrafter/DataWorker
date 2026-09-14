@@ -85,6 +85,11 @@ OSA
 	pb "Add :CFBundleIdentifier string $APP_BUNDLE_ID" 2>/dev/null || pb "Set :CFBundleIdentifier $APP_BUNDLE_ID"
 	pb "Add :CFBundleDisplayName string $APP_NAME" 2>/dev/null || true
 	pb "Add :LSMinimumSystemVersion string 11.0" 2>/dev/null || true
+	# the applet itself is only a relay to the detached binary (see launchApp above) — without
+	# this it briefly claims its own Dock icon/⌘Tab slot before handing off, which reads as two
+	# separate apps launching. LSUIElement keeps the relay out of the Dock entirely so only the
+	# real app (named + iconed at runtime by main.ts/macos-menu.ts) is ever visible.
+	pb "Add :LSUIElement bool true" 2>/dev/null || pb "Set :LSUIElement true"
 
 	# --- OPTIONAL: file associations — exported UTIs + document types ------------------------
 	# Fill in and uncomment to register the app as a document handler (LSHandlerRank: Owner =

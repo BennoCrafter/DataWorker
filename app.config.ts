@@ -84,7 +84,7 @@ export const APP: AppConfig = {
 		java: false,
 		keychain: false,
 		components: false,
-		updates: false,
+		updates: true,
 		prerequisites: false,
 	},
 	java: {
@@ -93,7 +93,10 @@ export const APP: AppConfig = {
 		jreLocales: "en,de",
 	},
 	repo: {
-		updateBase: "https://repo.example.com/artifactory/artifacts/my-app",
+		// a dedicated, force-pushed branch on the app's own GitHub repo — see scripts/publish.ts.
+		// Plain GETs (server/update.ts) work anonymously against a public repo's raw file URLs;
+		// no credentials/repo.ts auth chain needed for the download side.
+		updateBase: "https://raw.githubusercontent.com/BennoCrafter/DataWorker/releases",
 	},
 };
 

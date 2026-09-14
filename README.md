@@ -40,20 +40,41 @@ how that scaffold works. The DataWorker-specific pieces:
 | `server/library-routes.ts`     | The `/api/libraries*` and `/api/import-csv` HTTP routes         |
 | `ui/js/library.js`             | The whole UI: sidebar, table, modals                            |
 
-Everything else (webview window, macOS menu, settings popover, native file dialogs) is the
-unmodified template scaffold — see its own `README.md`/`docs/internals.md` history for that
-part. Only `features.macMenu` and `features.windowsMenu` are on in `app.config.ts`; the rest
-(Java, keychain, downloaded components, self-update, startup prerequisites) are off — this app
-doesn't need them.
+Everything else (webview window, macOS menu, settings popover, native file dialogs, self-
+update) is the unmodified template scaffold — see its own `README.md`/`docs/internals.md`
+history for that part. `features.macMenu`, `features.windowsMenu` and `features.updates` are on
+in `app.config.ts`; the rest (Java, keychain, downloaded components, startup prerequisites) are
+off — this app doesn't need them.
+
+## Updates
+
+`features.updates` is on, pointed at this repo's own `releases` branch on GitHub
+(`app.config.ts`'s `repo.updateBase`) — the app checks
+`raw.githubusercontent.com/BennoCrafter/DataWorker/releases/manifest-mac-aarch64.json` in the
+background and offers an "Update" button when it's newer than the running build. Nothing
+installs without that explicit click, and a downloaded update waits for a further explicit
+"Restart Now" before it takes effect.
+
+To ship a new build:
+
+```sh
+deno task release   # build → notarize → publish, in one go
+```
+
+`deno task publish` (part of `release`, or run alone after a manual `build` + `notarize`)
+force-pushes a single fresh commit holding just the zipped `.app` and its manifest to the
+`releases` branch — see `scripts/publish.ts` for why (GitHub Releases' upload API doesn't fit
+the template's plain-PUT uploader, and the branch is deliberately history-free so it doesn't
+grow a new ~60MB blob on every publish). Never edit that branch by hand.
 
 ## Commands
 
-| Command           | What it does                                 |
-| ------------------ | ----------------------------------------------- |
-| `deno task start`  | Run the app in its native window                |
-| `deno task serve`  | Run the same app in the system browser           |
-| `deno task check`  | Type-check every entry point                     |
-| `deno task build`  | Compile a standalone binary + `.app` (`dist/`)   |
-
-`deno task build` produces an unsigned app — first launch needs a right-click ▸ Open (or
-System Settings ▸ Privacy & Security ▸ Open Anyway) since it isn't notarized.
+| Command              | What it does                                              |
+| --------------------- | ------------------------------------------------------------ |
+| `deno task start`     | Run the app in its native window                            |
+| `deno task serve`     | Run the same app in the system browser                       |
+| `deno task check`     | Type-check every entry point                                 |
+| `deno task build`     | Compile a standalone binary + `.app` (`dist/`)               |
+| `deno task notarize`  | Sign + notarize + staple the built `.app` (needs a Developer ID) |
+| `deno task publish`   | Push the built (and notarized) app to the `releases` branch  |
+| `deno task release`   | `build` → `notarize` → `publish`                              |

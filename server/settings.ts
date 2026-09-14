@@ -48,8 +48,12 @@ export async function handleSettingsGet(): Promise<Response> {
 		snapshot.keychain = await keychain.keychainOverview(`${updateBase()}/`);
 	}
 
-	// where a repository download would authenticate from — relevant once anything downloads
-	if (APP.features.components || APP.features.updates) {
+	// where a repository download would authenticate from — relevant once anything downloads.
+	// NOT shown for updates here: this app's updateBase is a public GitHub repo's raw file
+	// URLs, which anonymous GETs already work against by design — showing the "no credentials
+	// found" section for that would read as a problem when there deliberately isn't one. Add
+	// features.updates back to this condition if updateBase ever moves somewhere that needs auth.
+	if (APP.features.components) {
 		const repo = await import("./repo.ts");
 		snapshot.repo = await repo.credentialStatus(`${updateBase()}/`);
 	}

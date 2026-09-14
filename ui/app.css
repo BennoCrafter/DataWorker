@@ -87,6 +87,26 @@ button {
 	gap: 10px;
 }
 
+#update-btn {
+	display: flex;
+	align-items: center;
+	gap: 7px;
+	height: 32px;
+	padding: 0 11px;
+	border: 0;
+	border-radius: var(--radius-full);
+	background: var(--color-accent);
+	cursor: pointer;
+	color: #fff;
+}
+#update-btn:hover {
+	filter: brightness(1.08);
+}
+#update-btn:disabled {
+	opacity: 0.55;
+	cursor: default;
+}
+
 /* ── Settings popover — a form on glass reads badly, so it gets an opaque background ── */
 #settings-wrap {
 	position: relative;
@@ -217,6 +237,112 @@ button {
 	outline: 2px solid var(--color-accent);
 	outline-offset: -1px;
 	border-color: transparent;
+}
+
+/* ── Activity button + popover — shown only during/after an update, see activity.js ── */
+#activity-wrap {
+	position: relative;
+}
+#activity-btn {
+	display: flex;
+	align-items: center;
+	gap: 9px;
+	height: 32px;
+	padding: 0 6px 0 12px;
+	border: 0;
+	cursor: pointer;
+	min-width: 176px;
+}
+#activity-btn:active {
+	transform: scale(0.97);
+}
+#activity-btn .dot {
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	flex: none;
+}
+#activity-btn .label {
+	flex: 1;
+	text-align: left;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	color: var(--label-primary);
+}
+#activity-btn .pct {
+	font-family: var(--font-mono);
+	color: var(--label-secondary);
+	min-width: 34px;
+	text-align: right;
+}
+#activity-pop {
+	position: absolute;
+	top: calc(100% + 10px);
+	right: 0;
+	width: 300px;
+	border-radius: var(--radius-popover);
+	box-shadow: var(--glass-shadow);
+	border: var(--separator-height) solid var(--separator);
+	padding: 16px;
+	z-index: 50;
+	animation: scale-in var(--dur-fast) var(--ease-out);
+	transform-origin: top right;
+}
+#activity-pop .pop-head {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+#activity-pop .pop-head .text-subheadline {
+	flex: 1;
+}
+#activity-pop .bar {
+	height: 6px;
+	border-radius: 3px;
+	background: var(--fill-secondary);
+	overflow: hidden;
+	margin: 13px 0 15px;
+}
+#activity-pop .bar > div {
+	height: 100%;
+	border-radius: 3px;
+	transition: width 0.25s ease;
+}
+#activity-pop .bar > div.indeterminate {
+	transition: none;
+	animation: app-indeterminate 1.1s ease-in-out infinite;
+}
+@keyframes app-indeterminate {
+	0% {
+		margin-left: -40%;
+	}
+	100% {
+		margin-left: 100%;
+	}
+}
+#activity-pop .result {
+	margin-top: 14px;
+	padding-top: 13px;
+	border-top: var(--separator-height) solid var(--separator);
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
+}
+#activity-pop .result .name {
+	font-family: var(--font-mono);
+	color: var(--color-green);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+#activity-pop .error {
+	color: var(--color-red);
+	white-space: pre-wrap;
+	word-break: break-word;
+	max-height: 160px;
+	overflow: auto;
 }
 
 /* ── Segmented control (Light/Dark) ── */
