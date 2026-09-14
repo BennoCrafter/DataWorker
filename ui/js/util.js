@@ -6,15 +6,6 @@
 
 export const $ = (id) => document.getElementById(id);
 
-export function humanSize(bytes) {
-	if (bytes < 1024) return bytes + " B";
-	let value = bytes;
-	for (const unit of ["KB", "MB", "GB"]) {
-		value /= 1024;
-		if (value < 1024 || unit === "GB") return (value >= 10 ? Math.round(value) : value.toFixed(1)) + " " + unit;
-	}
-}
-
 export function el(tag, className, text) {
 	const node = document.createElement(tag);
 	if (className) node.className = className;
@@ -103,9 +94,4 @@ export async function postStream(path, body, onProgress) {
 
 export function dirName(path) {
 	return path.slice(0, path.lastIndexOf("/")) || path;
-}
-
-export function shortPath(path) {
-	const home = /^\/(Users|home)\/[^/]+/.exec(path ?? "");
-	return home ? "~" + path.slice(home[0].length) : (path ?? "");
 }

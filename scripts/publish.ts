@@ -25,8 +25,6 @@ import { artifactName, manifestName } from "../server/update.ts";
 import { currentVersion } from "../server/version.ts";
 import { fileSha256 } from "../server/repo.ts";
 
-const variant = "slim"; // this app never turns on features.java, so there is only one variant
-
 // fromFileUrl so a checkout path with spaces resolves
 const root = fromFileUrl(new URL("../", import.meta.url));
 const dist = `${root}dist/`;
@@ -45,20 +43,20 @@ await Deno.stat(app).catch(() => {
 await requireNotarized(app);
 
 console.log("zipping the app...");
-const zip = `${dist}${artifactName(variant)}`;
+const zip = `${dist}${artifactName()}`;
 await Deno.remove(zip).catch(() => {});
 // -y keeps symlinks; zip from inside dist so the archive root is "<App Name>.app/"
 const zipResult = await new Deno.Command("zip", { args: ["-qry", zip, `${APP.name}.app`], cwd: dist }).output();
 if (!zipResult.success) throw new Error("zip failed");
 
 const size = (await Deno.stat(zip)).size;
-console.log(`computing checksum of ${artifactName(variant)} (${megabytes(size)})...`);
+console.log(`computing checksum of ${artifactName()} (${megabytes(size)})...`);
 const sha256 = await fileSha256(zip);
 
 const manifest = {
 	version: stamp.version,
 	commit: stamp.commit ?? null,
-	file: artifactName(variant),
+	file: artifactName(),
 	size,
 	sha256,
 	stamp: Date.now(),
@@ -68,8 +66,8 @@ console.log(`publishing to the '${BRANCH}' branch...`);
 await publishToGitBranch(zip, manifest);
 
 console.log(`published ${stamp.version}${stamp.commit ? ` (${stamp.commit})` : ""}`);
-console.log(`  ${updateBase()}/${artifactName(variant)}`);
-console.log(`  ${updateBase()}/${manifestName(variant)}`);
+console.log(`  ${updateBase()}/${artifactName()}`);
+console.log(`  ${updateBase()}/${manifestName()}`);
 
 /** Force-pushes a single orphan commit with just the artifact + manifest to BRANCH. */
 async function publishToGitBranch(artifactPath: string, manifestObj: Record<string, unknown>): Promise<void> {
@@ -84,9 +82,9 @@ async function publishToGitBranch(artifactPath: string, manifestObj: Record<stri
 			if (entry.name === ".git") continue;
 			await Deno.remove(`${worktree}/${entry.name}`, { recursive: true });
 		}
-		await Deno.copyFile(artifactPath, `${worktree}/${artifactName(variant)}`);
+		await Deno.copyFile(artifactPath, `${worktree}/${artifactName()}`);
 		await Deno.writeTextFile(
-			`${worktree}/${manifestName(variant)}`,
+			`${worktree}/${manifestName()}`,
 			JSON.stringify(manifestObj, null, "\t") + "\n",
 		);
 		await run(["git", "add", "-A"], worktree);

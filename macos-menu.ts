@@ -213,11 +213,11 @@ export function installMacMenu(webview: Webview, options: MacMenuOptions = {}): 
 	sym.msg_void_id(quit, sel("setTarget:"), webview.unsafeWindowHandle);
 	addItem(appMenu, quit);
 
-	const fileMenu = addSubmenu(mainMenu, "Ablage");
-	dispatchItem(fileMenu, "Neue Bibliothek…", { cmd: "new-library" }, "n", CMD | SHIFT);
-	dispatchItem(fileMenu, "Neuer Eintrag", { cmd: "new-record" }, "n");
+	const fileMenu = addSubmenu(mainMenu, "File");
+	dispatchItem(fileMenu, "New Library…", { cmd: "new-library" }, "n", CMD | SHIFT);
+	dispatchItem(fileMenu, "New Record", { cmd: "new-record" }, "n");
 	addSeparator(fileMenu);
-	dispatchItem(fileMenu, "CSV importieren…", { cmd: "import-csv" }, "i");
+	dispatchItem(fileMenu, "Import CSV…", { cmd: "import-csv" }, "i");
 
 	// Edit — the standard nil-target selectors; without these, WKWebView never receives
 	// Cmd+A/C/V/X/Z in text fields (the bug this module exists to fix)

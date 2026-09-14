@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="de" data-theme="light">
 	<head>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1">
@@ -23,7 +23,7 @@
 					<!-- appears when the updates feature finds something newer (or a restart is pending) -->
 					<button id="update-btn" class="hidden">
 						<i data-lucide="arrow-down-circle" width="15" height="15"></i>
-						<span class="text-footnote emphasized">Update</span>
+						<span class="text-footnote emphasized" data-i18n="update.headerLabel">Update</span>
 					</button>
 					<!-- appears only while an update is downloading/installing, or showing its result —
 					     not a permanent fixture, this app has nothing else to report here -->
@@ -32,7 +32,7 @@
 						<div id="activity-pop" class="material-chrome hidden"></div>
 					</div>
 					<div id="settings-wrap">
-						<button id="settings-btn" class="icon-btn plain" title="Settings">
+						<button id="settings-btn" class="icon-btn plain" data-i18n-title="topbar.settings" title="Settings">
 							<i data-lucide="settings" width="18" height="18"></i>
 						</button>
 						<div id="settings-pop" class="material-chrome hidden"></div>
@@ -43,12 +43,12 @@
 			<main>
 				<aside id="sidebar">
 					<div class="sidebar-head">
-						<span class="text-caption1 emphasized sidebar-title">Bibliotheken</span>
+						<span class="text-caption1 emphasized sidebar-title" data-i18n="sidebar.title">Bibliotheken</span>
 						<div class="sidebar-actions">
-							<button id="import-csv-btn" class="icon-btn plain" title="CSV importieren…">
+							<button id="import-csv-btn" class="icon-btn plain" data-i18n-title="sidebar.importCsv" title="CSV importieren…">
 								<i data-lucide="upload" width="16" height="16"></i>
 							</button>
-							<button id="new-library-btn" class="icon-btn plain" title="Neue Bibliothek…">
+							<button id="new-library-btn" class="icon-btn plain" data-i18n-title="sidebar.newLibrary" title="Neue Bibliothek…">
 								<i data-lucide="plus" width="16" height="16"></i>
 							</button>
 						</div>
@@ -61,9 +61,6 @@
 
 		<!-- library modals (new library / manage fields) render here -->
 		<div id="modal-layer" class="hidden"></div>
-
-		<!-- prerequisites feature: the startup gate renders here, over everything -->
-		<div id="prereq-layer" class="hidden"></div>
 
 		<script src="/vendor/lucide.min.js"></script>
 		<script type="module" src="/js/main.js"></script>

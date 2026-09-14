@@ -3,15 +3,11 @@
 		"start": "deno run --quiet --unstable-ffi --allow-ffi --allow-net --allow-read --allow-write --allow-env --allow-run main.ts",
 		"serve": "deno run --quiet --allow-net --allow-read --allow-write --allow-env --allow-run server.ts",
 		"compile": "deno run --allow-read --allow-write --allow-run --allow-env scripts/compile.ts",
-		"compile:fat": "deno run --allow-read --allow-write --allow-run --allow-env scripts/compile.ts --fat",
 		"build": "deno task compile && sh scripts/make-app.sh",
-		"build:fat": "deno task build:jre && deno task compile:fat && sh scripts/make-app.sh",
-		"build:jre": "deno run --allow-net --allow-read --allow-write --allow-env --allow-run scripts/build-jre.ts",
 		"notarize": "sh scripts/notarize.sh",
 		"publish": "deno run --allow-net --allow-read --allow-write --allow-env --allow-run scripts/publish.ts",
 		"release": "deno task build && deno task notarize && deno task publish",
-		"release:fat": "deno task build:fat && deno task notarize && deno task publish",
-		"check": "deno check main.ts server.ts macos-menu.ts windows-menu.ts scripts/compile.ts scripts/build-jre.ts scripts/publish.ts"
+		"check": "deno check main.ts server.ts macos-menu.ts windows-menu.ts scripts/compile.ts scripts/publish.ts"
 	},
 	"imports": {
 		"@webview/webview": "jsr:@webview/webview@0.9.0",

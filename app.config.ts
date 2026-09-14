@@ -1,10 +1,10 @@
 /**
- * Central app configuration — the ONE file to edit when starting a new app from this template.
+ * Central app configuration.
  *
  * Identity (id, name, bundle id) feeds the window title, the macOS/Linux packaging, the data /
  * cache / config directory names and the published artifact names. The `features` block turns
- * the optional subsystems on and off — every feature is a self-contained module that is only
- * loaded (dynamic import) and only routed when its flag is on:
+ * the optional subsystems on and off — each is a self-contained module that is only loaded
+ * (dynamic import) and only routed when its flag is on:
  *
  *   macMenu      native macOS menu bar (macos-menu.ts) — also what makes Cmd+A/C/V/X/Z work
  *                in the webview's text fields on macOS. Without it the app still runs, but
@@ -12,27 +12,9 @@
  *   windowsMenu  native Windows menu bar (windows-menu.ts). Purely additive chrome — unlike
  *                macOS, WebView2 handles the editing shortcuts by itself, so leaving this off
  *                just means a chromeless window.
- *   java         a Java runtime for the app's Java-backed work (server/java.ts): the FAT build
- *                variant embeds a thinned JRE (prep/jre.zip via `deno task build:fat`), the
- *                SLIM variant resolves a system JDK >= java.required.
- *   keychain     secrets via the denkbares keychain (~/.des-kch) read by a small Java helper
- *                (server/keychain.ts + helper/KeychainTool.java + jars/keychain-cli.jar), with
- *                the unlock password from DES_KEYCHAIN_PW or — on macOS — the login Keychain.
- *                REQUIRES `java`.
- *   components   big variable assets downloaded on first launch instead of shipped
- *                (server/components.ts) — register yours in its COMPONENTS list. Downloads can
- *                authenticate via env vars and (when on) the keychain.
  *   updates      in-app self-update (server/update.ts): `deno task publish` uploads the app +
  *                a manifest under fixed names; installed apps compare, download, verify and
  *                swap on disk — the restart is always an explicit user click.
- *   prerequisites  a startup gate (server/prereqs.ts + ui/js/prereqs.js): before the app UI
- *                boots, every prerequisite registered in server/prereqs.ts is checked; a
- *                blocking screen lists whatever is missing with an install hint per item and
- *                re-checks (button + auto-poll) until everything passes. Escape hatch:
- *                <envPrefix>_SKIP_PREREQS=1.
- *
- * Dependencies between features are validated at startup (validateFeatures): keychain needs
- * java; components/updates want repo.updateBase (or its env override) to point somewhere real.
  */
 
 export interface AppConfig {
@@ -48,19 +30,7 @@ export interface AppConfig {
 	features: {
 		macMenu: boolean;
 		windowsMenu: boolean;
-		java: boolean;
-		keychain: boolean;
-		components: boolean;
 		updates: boolean;
-		prerequisites: boolean;
-	};
-	java: {
-		/** Minimum Java major version for the slim variant's system JDK. */
-		required: number;
-		/** The fixed Temurin release `deno task build:jre` embeds into the fat variant. */
-		jdkRelease: string;
-		/** Locales kept in the thinned embedded runtime (jlink --include-locales). */
-		jreLocales: string;
 	};
 	repo: {
 		/**
@@ -81,16 +51,7 @@ export const APP: AppConfig = {
 	features: {
 		macMenu: true,
 		windowsMenu: true,
-		java: false,
-		keychain: false,
-		components: false,
 		updates: true,
-		prerequisites: false,
-	},
-	java: {
-		required: 25,
-		jdkRelease: "jdk-25.0.3+9",
-		jreLocales: "en,de",
 	},
 	repo: {
 		// a dedicated, force-pushed branch on the app's own GitHub repo — see scripts/publish.ts.
@@ -111,27 +72,16 @@ export function updateBase(): string {
 }
 
 /**
- * Cross-feature consistency warnings, logged once at server start. Deliberately warnings, not
- * errors — a half-configured app should still come up so Settings can say what is missing.
+ * Consistency warning, logged once at server start. Deliberately a warning, not an error — a
+ * half-configured app should still come up so Settings can say what is missing.
  */
 export function validateFeatures(): string[] {
 	const warnings: string[] = [];
-	const { features } = APP;
-	if (features.keychain && !features.java) {
-		warnings.push(
-			"features.keychain requires features.java (the keychain helper is a Java tool) — keychain is ignored",
-		);
-	}
-	if ((features.components || features.updates) && APP.repo.updateBase.includes("example.com")) {
+	if (APP.features.updates && APP.repo.updateBase.includes("example.com")) {
 		warnings.push(
 			`repo.updateBase still points at the placeholder (${APP.repo.updateBase}) — ` +
-				"component downloads / update checks will fail until it is configured",
+				"update checks will fail until it is configured",
 		);
 	}
 	return warnings;
-}
-
-/** The keychain feature, with its java dependency enforced. */
-export function keychainEnabled(): boolean {
-	return APP.features.keychain && APP.features.java;
 }

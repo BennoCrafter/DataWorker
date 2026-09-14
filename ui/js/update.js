@@ -1,17 +1,16 @@
 /**
- * UPDATES FEATURE: in-app updates — the app and (components feature) the downloaded
- * components, always behind a button: a background check against the published manifests shows
- * the header Update button when anything newer exists; clicking it downloads and installs with
- * real progress in the activity popover. Component updates take effect in place; an installed
- * APP update waits for the user — the header button turns into "Restart" and the activity card
- * offers "Restart Now". Only that explicit restart quits this instance (the server kills the
- * process) and starts the new one.
+ * UPDATES FEATURE: in-app self-update, always behind a button: a background check against the
+ * published manifest shows the header Update button when a newer build exists; clicking it
+ * downloads and installs with real progress in the activity popover, then the header button
+ * turns into "Restart" and the activity card offers "Restart Now". Only that explicit restart
+ * quits this instance (the server kills the process) and starts the new one.
  */
 import { $, el, lucideIcon, postJson, postStream, refreshIcons } from "./util.js";
 import { activityDone, activityError, activityProgress, activityStart } from "./activity.js";
 import { refreshStatus } from "./status.js";
+import { t } from "./i18n.js";
 
-/** GET /api/update — {app, components, available, pendingRestart}, or null when unreachable. */
+/** GET /api/update — {app, available, pendingRestart}, or null when unreachable. */
 export async function fetchUpdateCheck() {
 	try {
 		const check = await (await fetch("/api/update")).json();
@@ -25,9 +24,6 @@ export async function fetchUpdateCheck() {
 export function updateSummary(check) {
 	const parts = [];
 	if (check?.app?.available) parts.push(`app build ${check.app.latest.version}`);
-	for (const component of check?.components ?? []) {
-		if (component.available) parts.push(`${component.label} ${component.latest ?? ""}`.trim());
-	}
 	return parts;
 }
 
@@ -49,8 +45,8 @@ export function showUpdateButton(check) {
 	}
 	setHeaderButton(
 		"arrow-down-circle",
-		"Update",
-		`Update available: ${parts.join(", ")} — downloads and installs`,
+		t("update.headerLabel"),
+		t("update.availableTooltip", { list: parts.join(", ") }),
 		() => applyUpdates(),
 	);
 }
@@ -59,8 +55,8 @@ export function showUpdateButton(check) {
 export function showRestartButton(version) {
 	setHeaderButton(
 		"refresh-cw",
-		"Restart",
-		version ? `Update to build ${version} installed — restart to finish` : "Restart to finish the update",
+		t("update.headerRestartLabel"),
+		version ? t("update.restartTooltip", { version }) : t("update.restartToFinishTooltip"),
 		() => restartNow(),
 	);
 }
@@ -68,11 +64,11 @@ export function showRestartButton(version) {
 /** Quits this instance and starts the updated app — on explicit user request only. */
 export function restartNow() {
 	$("update-btn").disabled = true;
-	activityStart("App Update", "Restarting…");
+	activityStart(t("update.appUpdateTitle"), t("update.restarting"));
 	// the process dies moments after the response; if something goes wrong, say so
 	postJson("/api/restart", {}).then((result) => {
 		if (result.ok === false) {
-			activityError(result.error ?? "restart failed");
+			activityError(result.error ?? t("update.restartFailed"));
 			$("update-btn").disabled = false;
 		}
 	});
@@ -82,26 +78,20 @@ export function restartNow() {
 export async function applyUpdates() {
 	const button = $("update-btn");
 	button.disabled = true;
-	activityStart("App Update", "Downloading updates…");
+	activityStart(t("update.appUpdateTitle"), t("update.downloading"));
 	const result = await postStream("/api/update/apply", {}, activityProgress);
 	if (result.ok === false) {
-		activityError(result.error ?? "update failed");
+		activityError(result.error ?? t("update.updateFailed"));
 		button.disabled = false;
 		return result;
 	}
-	if (result.restartRequired) {
-		// installed on disk; this instance keeps running until the user restarts
-		showRestartButton(result.version);
-		activityDone(null, `Update to build ${result.version} installed — restart when it suits you.`, {
-			label: "Restart Now",
-			hint: "Ready",
-			run: restartNow,
-		});
-		return result;
-	}
-	activityDone(null, result.updated?.length ? `Updated: ${result.updated.join(", ")}` : "Everything up to date");
-	button.classList.add("hidden");
-	await refreshStatus();
+	// installed on disk; this instance keeps running until the user restarts
+	showRestartButton(result.version);
+	activityDone(null, t("update.installedRestartWhenReady", { version: result.version }), {
+		label: t("settings.restartNow"),
+		hint: t("update.ready"),
+		run: restartNow,
+	});
 	return result;
 }
 

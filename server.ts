@@ -2,15 +2,11 @@
  * Local HTTP server behind the desktop window — the route table and the two run modes.
  *
  * The CORE routes (status, settings, config, native pickers, reveal, static ui/) are always
- * on; the OPTIONAL features contribute their routes only when enabled in app.config.ts — the
- * modules are loaded lazily, so a disabled feature costs nothing at startup:
+ * on; the OPTIONAL updates feature contributes its routes only when enabled in app.config.ts —
+ * the module is loaded lazily, so it costs nothing at startup if turned off:
  *
- * - server/java.ts        (features.java)       Java runtime resolution + helpers
- * - server/keychain.ts    (features.keychain)   secrets via the keychain + unlock password
- * - server/components.ts  (features.components) downloaded runtime components
  * - server/update.ts      (features.updates)    in-app self-update + restart
- * - server/prereqs.ts     (features.prerequisites) startup prerequisite checks (the gate)
- * - server/settings.ts    settings snapshot (adapts to the enabled features)
+ * - server/settings.ts    settings snapshot
  * - server/system.ts      native dialogs, reveal, user config
  * - server/http.ts        JSON/NDJSON responses, static files; paths.ts: fs helpers
  *
@@ -22,7 +18,7 @@
  * - standalone via `deno task serve` (prints the URL and opens the system browser)
  */
 
-import { APP, appEnv, keychainEnabled, validateFeatures } from "./app.config.ts";
+import { APP, appEnv, validateFeatures } from "./app.config.ts";
 import { json, serveStatic, streamResponse } from "./server/http.ts";
 import { currentVersion } from "./server/version.ts";
 import {
@@ -33,16 +29,13 @@ import {
 	handlePickFolder,
 	handleReveal,
 } from "./server/system.ts";
-import { handleKeychainPassword, handleSettingsGet } from "./server/settings.ts";
+import { handleSettingsGet } from "./server/settings.ts";
 import { handleImportCsv, handleLibraryApi } from "./server/library-routes.ts";
 
 for (const warning of validateFeatures()) console.warn(`⚠️  ${warning}`);
 
-// optional features — loaded once here, only when enabled
-const java = APP.features.java ? await import("./server/java.ts") : null;
-const components = APP.features.components ? await import("./server/components.ts") : null;
+// optional feature — loaded once here, only when enabled
 const updates = APP.features.updates ? await import("./server/update.ts") : null;
-const prereqs = APP.features.prerequisites ? await import("./server/prereqs.ts") : null;
 
 const server = Deno.serve(
 	{ hostname: "127.0.0.1", port: Number(appEnv("PORT") ?? 0), onListen: () => {} },
@@ -59,25 +52,16 @@ const server = Deno.serve(
 					return json({
 						ok: true,
 						name: APP.name,
-						features: { ...APP.features, keychain: keychainEnabled() },
+						features: APP.features,
 						version: (await currentVersion())?.version ?? null,
 						os: Deno.build.os,
 						// a file the OS asked us to open on launch (macOS document handler)
 						openOnStart: appEnv("OPEN") || null,
-						...(java
-							? {
-								java: await java.javaVersion(),
-								javaSource: await java.javaSource(),
-								javaProblem: await java.javaProblem(),
-							}
-							: {}),
-						...(components ? { componentsReady: await components.componentsReady() } : {}),
 					});
 				}
 				if (url.pathname === "/api/settings") return await handleSettingsGet();
 				if (url.pathname === "/api/config") return await handleConfigGet();
 				if (updates && url.pathname === "/api/update") return json({ ok: true, ...await updates.checkForUpdate() });
-				if (prereqs && url.pathname === "/api/prereqs") return json(await prereqs.checkPrerequisites());
 				// ── your app's GET routes here ─────────────────────────────────────────
 				const libraryGet = await handleLibraryApi(request, url);
 				if (libraryGet) return libraryGet;
@@ -101,23 +85,12 @@ const server = Deno.serve(
 				}
 				const libraryPost = await handleLibraryApi(request, url);
 				if (libraryPost) return libraryPost;
-				if (prereqs && url.pathname === "/api/prereqs/fix") {
-					// a value the user pasted into the startup gate (token, keychain password)
-					return await prereqs.handlePrereqFix(request);
-				}
-				if (components && url.pathname === "/api/components/ensure") {
-					// downloads whatever component is missing (first launch, or after an aborted setup)
-					return streamResponse((emit) => components.ensureComponents(emit));
-				}
 				if (updates && url.pathname === "/api/update/apply") {
 					return streamResponse((emit) => updates.applyUpdate(emit));
 				}
 				if (updates && url.pathname === "/api/restart") {
 					// quit this instance and start the swapped-in app — only on explicit user request
 					return json(updates.requestRestart());
-				}
-				if (keychainEnabled() && url.pathname === "/api/settings/keychain-password") {
-					return await handleKeychainPassword(request);
 				}
 			}
 			return new Response("not found", { status: 404 });

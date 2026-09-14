@@ -1,12 +1,15 @@
 /**
- * Activity feedback for long-running server work (component setup, updates, your app's own
- * jobs): the top-chrome button + popover with a real progress bar. Feed it from postStream()
- * via activityProgress; activityDone can attach an output path (offered with a Reveal button —
- * the server only reveals paths it produced, see server/system.ts) or a follow-up action
- * ({label, hint, run}, e.g. the update restart).
+ * Activity feedback for long-running server work (updates, your app's own jobs): the top-chrome
+ * button + popover with a real progress bar. Feed it from postStream() via activityProgress;
+ * activityDone can attach an output path (offered with a Reveal button — the server only reveals
+ * paths it produced, see server/system.ts) or a follow-up action ({label, hint, run}, e.g. the
+ * update restart).
  */
 import { $, dirName, el, postJson } from "./util.js";
 import { state } from "./state.js";
+import { onLanguageChange, t } from "./i18n.js";
+
+onLanguageChange(() => renderActivity());
 
 export function activityStart(title, message) {
 	// pct is 0..1 (null = indeterminate) — driven by real progress via activityProgress()
@@ -71,12 +74,12 @@ export function renderActivity() {
 	} else if (a.phase === "error") {
 		dot.style.background = "var(--color-red)";
 		dot.style.boxShadow = "0 0 0 3px color-mix(in srgb, var(--color-red) 22%, transparent)";
-		label.textContent = "Failed";
+		label.textContent = t("activity.failed");
 		pct.textContent = "";
 	} else {
 		dot.style.background = "var(--gray)";
 		dot.style.boxShadow = "0 0 0 3px var(--fill-tertiary)";
-		label.textContent = "Idle · Ready";
+		label.textContent = t("activity.idle");
 		pct.textContent = "";
 	}
 	button.append(dot, label, pct);
@@ -86,12 +89,12 @@ export function renderActivity() {
 	if (!state.showActivity) return;
 	pop.replaceChildren();
 	const head = el("div", "pop-head");
-	head.append(el("div", "text-subheadline emphasized", a.phase === "idle" ? "Activity" : a.title));
+	head.append(el("div", "text-subheadline emphasized", a.phase === "idle" ? t("activity.title") : a.title));
 	pop.append(head);
 	const sub = el(
 		"div",
 		"text-caption1 message",
-		a.phase === "idle" ? "Nothing running." : (a.message || (a.output ? dirName(a.output) : "")),
+		a.phase === "idle" ? t("activity.nothingRunning") : (a.message || (a.output ? dirName(a.output) : "")),
 	);
 	sub.style.color = "var(--label-secondary)";
 	sub.style.marginTop = "2px";
@@ -122,7 +125,7 @@ export function renderActivity() {
 		const result = el("div", "result");
 		const name = el("span", "text-caption1 name", a.output.split("/").pop());
 		name.title = a.output;
-		const reveal = el("button", "btn-filled text-footnote emphasized", "Reveal");
+		const reveal = el("button", "btn-filled text-footnote emphasized", t("activity.reveal"));
 		reveal.style.height = "28px";
 		reveal.style.padding = "0 12px";
 		reveal.onclick = () => {

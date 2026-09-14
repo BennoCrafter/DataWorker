@@ -1,22 +1,11 @@
 /**
- * Server status and the component setup: fetches /api/status, keeps the top-chrome status pill
- * and brand current, and (components feature) runs the first-launch component download with
- * progress in the activity popover.
+ * Server status: fetches /api/status and keeps the top-chrome brand/title current.
  */
-import { $, postStream } from "./util.js";
-import { activityDone, activityError, activityProgress, activityStart } from "./activity.js";
+import { $ } from "./util.js";
+import { t } from "./i18n.js";
 
 /** The last /api/status snapshot — includes `features` so the UI knows what is enabled. */
 export let appStatus = { features: {} };
-
-/** A short java label like "openjdk 25.0.3 LTS · embedded" out of the raw `java -version` line. */
-export function javaLabel(status) {
-	if (!status.java) return null;
-	const versionMatch = String(status.java).match(/"([^"]+)"/);
-	const lts = /\bLTS\b/.test(status.java) ? " LTS" : "";
-	const source = status.javaSource === "embedded" ? " · embedded" : status.javaSource === "system" ? " · system" : "";
-	return (versionMatch ? `openjdk ${versionMatch[1]}${lts}` : status.java) + source;
-}
 
 export function applyStatusLabels(status) {
 	appStatus = status;
@@ -24,7 +13,7 @@ export function applyStatusLabels(status) {
 		$("brand-name").textContent = status.name;
 		document.title = status.name;
 	}
-	if (status.version) document.querySelector("#topbar .brand").title = `build ${status.version}`;
+	if (status.version) document.querySelector("#topbar .brand").title = t("status.buildTooltip", { version: status.version });
 }
 
 /** Re-fetches /api/status and refreshes the top-chrome labels. */
@@ -36,22 +25,4 @@ export async function refreshStatus() {
 	} catch {
 		return null;
 	}
-}
-
-/**
- * COMPONENTS FEATURE: downloads whatever component is missing, with progress in the activity
- * popover. Resolves to true when everything is in place afterwards; on failure the activity
- * shows the error and false is returned (the caller decides whether to open Settings for
- * credentials).
- */
-export async function ensureComponents() {
-	activityStart("Component Setup", "Downloading components…");
-	const result = await postStream("/api/components/ensure", {}, activityProgress);
-	if (result.ok === false) {
-		activityError(result.error ?? "component setup failed");
-		return false;
-	}
-	activityDone(null, result.installed?.length ? `Downloaded: ${result.installed.join(", ")}` : "Everything in place");
-	await refreshStatus();
-	return true;
 }

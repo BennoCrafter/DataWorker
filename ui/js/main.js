@@ -1,35 +1,29 @@
 /**
  * Boot and wiring: loads config, applies the theme, renders the chrome, and binds the update
  * button, global click-away handling and keyboard shortcuts.
- *
- * The template's downloaded-components machinery stays out of this app's wiring — features.
- * components is off and always will be (this app ships everything it needs) — but updates is
- * on, so its background check + activity-popover progress are wired up below.
  */
 import { $, refreshIcons } from "./util.js";
 import { setConfig } from "./config.js";
+import { applyStaticTranslations, onLanguageChange } from "./i18n.js";
 import { state } from "./state.js";
 import { renderActivity } from "./activity.js";
 import { initUpdate } from "./update.js";
 import { applyStatusLabels } from "./status.js";
 import { applyTheme, initSettings, renderSettings } from "./settings.js";
-import { ensurePrerequisites } from "./prereqs.js";
 import { runCommand } from "./commands.js";
 import { initLibraryApp } from "./library.js";
 
 async function init() {
-	// config first, so the theme applies to the prerequisites gate too
 	const stored = await fetch("/api/config").then((r) => r.json()).catch(() => ({}));
 	setConfig(stored);
 	applyTheme();
+	applyStaticTranslations();
+	onLanguageChange(() => applyStaticTranslations());
 
 	// converts the icons already in index.html (lucide.min.js loads before this module script
 	// runs, so this only needs to happen once, this early) — without it they stay invisible
 	// until something else happens to call refreshIcons() later, e.g. opening Settings
 	refreshIcons();
-
-	// the startup gate (prerequisites feature) — the app only boots once everything passes
-	await ensurePrerequisites();
 
 	const status = await fetch("/api/status").then((r) => r.json());
 	applyStatusLabels(status);

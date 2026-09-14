@@ -1,8 +1,7 @@
 /**
  * Authenticated access to an artifact repository (Artifactory-style): plain requests first,
- * then credential candidates — environment variables, and (when the keychain feature is on)
- * the keychain. Shared by the component downloads (components.ts), the in-app updater
- * (update.ts) and the publisher (scripts/publish.ts, uploads).
+ * then environment-variable credential candidates. Shared by the in-app updater (update.ts)
+ * and the publisher (scripts/publish.ts).
  *
  * Credential environment variables, in order (app-prefixed first, then the denkbares/
  * Artifactory conventions for compatibility with existing tooling):
@@ -16,8 +15,7 @@
  */
 
 import { crypto } from "@std/crypto";
-import { APP, keychainEnabled } from "../app.config.ts";
-import type { KeychainSnapshot } from "./keychain.ts";
+import { APP } from "../app.config.ts";
 
 export type DownloadInfo = {
 	url: string;
@@ -71,17 +69,6 @@ export async function downloadFile(url: string, target: string, onProgress?: Dow
 	return info;
 }
 
-/** PUTs `data` to `url` (Artifactory deploy — same path overwrites); throws unless 2xx. */
-export async function uploadFile(
-	url: string,
-	data: Uint8Array<ArrayBuffer>,
-	headers: Record<string, string> = {},
-): Promise<DownloadInfo> {
-	const { response, info } = await fetchAuthenticated(url, { method: "PUT", headers, body: data });
-	await response.body?.cancel();
-	return info;
-}
-
 export async function fetchAuthenticated(
 	url: string,
 	init: RepoInit = {},
@@ -94,7 +81,7 @@ export async function fetchAuthenticated(
 	if (plain.status !== 401 && plain.status !== 403) throw await httpError(url, plain);
 	await plain.body?.cancel();
 
-	const credentials = await credentialCandidates(url);
+	const credentials = credentialCandidates();
 	for (const credential of credentials) {
 		const response = await request(credential.headers);
 		if (response.ok) return { response, info: { url, authenticated: true } };
@@ -102,14 +89,11 @@ export async function fetchAuthenticated(
 		await response.body?.cancel();
 	}
 
-	throw new Error(
-		`Authentication failed for ${url}. Provide repository credentials via the environment` +
-			(keychainEnabled() ? " or a keychain entry matching the URL (see Settings)." : "."),
-	);
+	throw new Error(`Authentication failed for ${url}. Provide repository credentials via the environment.`);
 }
 
 // ---------------------------------------------------------------------------
-// credentials — environment, keychain
+// credentials — environment variables
 // ---------------------------------------------------------------------------
 
 function firstEnv(names: string[]): string | undefined {
@@ -145,30 +129,7 @@ const PASSWORD_VARS = () => [
 	"REPO_PASSWORD",
 ];
 
-/** Where a download for `url` would get its credentials from — for the Settings popover. */
-export async function credentialStatus(
-	url: string,
-): Promise<{ source: "environment" | "keychain" | "none"; detail?: string }> {
-	for (const name of [...AUTHORIZATION_VARS(), ...TOKEN_VARS()]) {
-		if (Deno.env.get(name)) return { source: "environment", detail: name };
-	}
-	const envUser = firstEnv(USER_VARS());
-	if (envUser) return { source: "environment", detail: `user ${envUser}` };
-
-	const snapshot = await keychainSnapshotIfEnabled(url);
-	if (snapshot?.token) return { source: "keychain", detail: mask(snapshot.token) };
-	if (snapshot?.userPassword) {
-		return { source: "keychain", detail: `user ${parseCredentialValue(snapshot.userPassword)?.user ?? "?"}` };
-	}
-
-	return { source: "none" };
-}
-
-function mask(secret: string): string {
-	return secret.length <= 10 ? "•••" : `${secret.slice(0, 4)}…${secret.slice(-4)}`;
-}
-
-async function credentialCandidates(url: string): Promise<Credentials[]> {
+function credentialCandidates(): Credentials[] {
 	const credentials: Credentials[] = [];
 
 	const authorization = firstEnv(AUTHORIZATION_VARS());
@@ -177,33 +138,11 @@ async function credentialCandidates(url: string): Promise<Credentials[]> {
 	const envToken = firstEnv(TOKEN_VARS());
 	if (envToken) credentials.push(...valueCredentials(envToken));
 
-	const snapshot = await keychainSnapshotIfEnabled(url);
-	if (snapshot?.token) credentials.push(...tokenCredentials(snapshot.token));
-
 	const envUser = firstEnv(USER_VARS());
 	const envPassword = firstEnv(PASSWORD_VARS());
 	if (envUser && envPassword) credentials.push(basicCredentials(envUser, envPassword));
 
-	if (snapshot?.userPassword) {
-		const parsed = parseCredentialValue(snapshot.userPassword);
-		if (parsed) credentials.push(basicCredentials(parsed.user, parsed.password));
-	}
-
 	return credentials;
-}
-
-/**
- * The keychain's credentials for `url` via ONE (cached) helper run — only when the keychain
- * feature is on; the module is loaded lazily so a disabled feature costs nothing.
- */
-async function keychainSnapshotIfEnabled(url: string): Promise<KeychainSnapshot | null> {
-	if (!keychainEnabled()) return null;
-	try {
-		const { keychainSnapshot } = await import("./keychain.ts");
-		return await keychainSnapshot(url);
-	} catch {
-		return null; // any failure just means "no candidate from here"
-	}
 }
 
 function parseCredentialValue(value: string): { user: string; password: string } | null {

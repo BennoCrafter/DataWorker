@@ -4,16 +4,18 @@
  * calls — since the app is a single screen.
  */
 import { $, el, lucideIcon, postJson, refreshIcons } from "./util.js";
+import { currentLanguage, onLanguageChange, t } from "./i18n.js";
 
-const FIELD_TYPES = [
-	{ value: "text", label: "Text" },
-	{ value: "note", label: "Notiz" },
-	{ value: "number", label: "Zahl" },
-	{ value: "currency", label: "Betrag" },
-	{ value: "date", label: "Datum" },
-	{ value: "boolean", label: "Ja/Nein" },
-];
-const TYPE_LABEL = Object.fromEntries(FIELD_TYPES.map((t) => [t.value, t.label]));
+function fieldTypes() {
+	return [
+		{ value: "text", label: t("fieldType.text") },
+		{ value: "note", label: t("fieldType.note") },
+		{ value: "number", label: t("fieldType.number") },
+		{ value: "currency", label: t("fieldType.currency") },
+		{ value: "date", label: t("fieldType.date") },
+		{ value: "boolean", label: t("fieldType.boolean") },
+	];
+}
 
 const libState = {
 	libraries: [], // summaries
@@ -36,6 +38,10 @@ export async function initLibraryApp() {
 	$("import-csv-btn").onclick = importCsv;
 	document.addEventListener("keydown", (event) => {
 		if (event.key === "Escape" && !$("modal-layer").classList.contains("hidden")) closeModal();
+	});
+	onLanguageChange(() => {
+		renderSidebar();
+		renderLibraryView();
 	});
 	await loadLibraries();
 }
@@ -73,7 +79,7 @@ function renderSidebar() {
 	const list = $("library-list");
 	list.replaceChildren();
 	if (libState.libraries.length === 0) {
-		list.append(el("div", "sidebar-empty text-footnote", "Noch keine Bibliothek. Mit + eine neue anlegen oder einen alten Bento-Export importieren."));
+		list.append(el("div", "sidebar-empty text-footnote", t("sidebar.empty")));
 		refreshIcons(list);
 		return;
 	}
@@ -98,8 +104,8 @@ function renderLibraryView() {
 		const panel = el("section", "panel");
 		panel.append(withStyle(el("div", "glyph", ""), { background: "var(--color-accent)" }, iconInto("layout-grid", 44)));
 		const text = el("div");
-		text.append(el("div", "text-title2 emphasized", "Keine Bibliothek ausgewählt"));
-		text.append(el("div", "text-subheadline sub", "Links eine Bibliothek anlegen oder einen Bento-Export importieren."));
+		text.append(el("div", "text-title2 emphasized", t("library.noneSelectedTitle")));
+		text.append(el("div", "text-subheadline sub", t("library.noneSelectedSub")));
 		panel.append(text);
 		view.append(panel);
 		return;
@@ -123,14 +129,14 @@ function iconInto(name, size) {
 function renderToolbar(library) {
 	const bar = el("div", "lib-toolbar");
 	bar.append(el("span", "lib-title text-headline", library.name));
-	bar.append(el("span", "lib-count text-caption1", `${library.records.length} Einträge`));
+	bar.append(el("span", "lib-count text-caption1", t("library.entriesCount", { count: library.records.length })));
 	bar.append(el("span", "spacer"));
 
 	const search = el("div", "search-box");
 	search.append(lucideIcon("search", 14));
 	const input = document.createElement("input");
 	input.type = "text";
-	input.placeholder = "Suchen…";
+	input.placeholder = t("library.searchPlaceholder");
 	input.value = libState.search;
 	input.oninput = () => {
 		libState.search = input.value;
@@ -140,9 +146,9 @@ function renderToolbar(library) {
 	search.append(input);
 	bar.append(search);
 
-	const fieldsBtn = iconButton("settings-2", "Felder verwalten…", () => openLibraryModal(library));
+	const fieldsBtn = iconButton("settings-2", t("library.manageFieldsTitle"), () => openLibraryModal(library));
 	bar.append(fieldsBtn);
-	const exportBtn = iconButton("download", "Als CSV exportieren…", () => exportLibrary(library));
+	const exportBtn = iconButton("download", t("library.exportCsvTitle"), () => exportLibrary(library));
 	bar.append(exportBtn);
 	return bar;
 }
@@ -178,12 +184,13 @@ function renderTableWrap(library) {
 	const table = document.createElement("table");
 	table.className = "lib-table";
 
+	const typeLabel = Object.fromEntries(fieldTypes().map((ft) => [ft.value, ft.label]));
 	const thead = document.createElement("thead");
 	const headRow = document.createElement("tr");
 	for (const field of library.fields) {
 		const th = document.createElement("th");
 		th.textContent = field.label;
-		th.title = TYPE_LABEL[field.type] ?? field.type;
+		th.title = typeLabel[field.type] ?? field.type;
 		if (libState.sortKey === field.key) {
 			th.append(el("span", "sort-arrow", libState.sortDir === 1 ? "▲" : "▼"));
 		}
@@ -226,14 +233,15 @@ function renderRow(library, record) {
 	actionsTd.className = "actions-col";
 	const actions = el("div", "row-actions");
 	const view = el("button", "icon-btn plain row-delete");
-	view.title = "Eintrag öffnen";
+	view.title = t("record.openTitle");
 	view.append(lucideIcon("maximize-2", 14));
 	view.onclick = () => openRecordModal(library, record);
 	actions.append(view);
 	const del = el("button", "icon-btn plain row-delete");
-	del.title = "Eintrag löschen";
+	del.title = t("record.deleteTitle");
 	del.append(lucideIcon("trash-2", 15));
-	del.onclick = () => confirmModal(`"${recordTitle(library, record)}" löschen?`, () => deleteRecord(library, record));
+	del.onclick = () =>
+		confirmModal(t("record.confirmDelete", { title: recordTitle(library, record) }), () => deleteRecord(library, record));
 	actions.append(del);
 	actionsTd.append(actions);
 	tr.append(actionsTd);
@@ -242,7 +250,7 @@ function renderRow(library, record) {
 
 function recordTitle(library, record) {
 	const first = library.fields[0];
-	return (first && record.values[first.key]) || "Eintrag";
+	return (first && record.values[first.key]) || t("record.fallbackTitle");
 }
 
 function renderCell(library, record, field) {
@@ -284,7 +292,7 @@ function renderFooter(library) {
 	const footer = el("div", "lib-footer");
 	const btn = el("button", "add-record-btn");
 	btn.append(lucideIcon("plus", 15));
-	btn.append(el("span", "text-subheadline", "Neuer Eintrag"));
+	btn.append(el("span", "text-subheadline", t("library.newRecord")));
 	btn.onclick = () => addRecord(library);
 	footer.append(btn);
 	refreshIcons(footer);
@@ -318,18 +326,18 @@ async function deleteRecord(library, record) {
 
 async function exportLibrary(library) {
 	const result = await postJson(`/api/libraries/${library.id}/export`, {});
-	if (result?.ok) toast(`Exportiert nach ${result.path}`);
-	else if (!result?.cancelled) toast(result?.error || "Export fehlgeschlagen", true);
+	if (result?.ok) toast(t("toast.exportedTo", { path: result.path }));
+	else if (!result?.cancelled) toast(result?.error || t("toast.exportFailed"), true);
 }
 
 async function importCsv() {
-	toast("CSV-Datei wählen…");
+	toast(t("toast.chooseCsv"));
 	const result = await postJson("/api/import-csv", {});
 	if (result?.ok) {
 		await loadLibraries(result.library.id);
-		toast(`"${result.library.name}" importiert (${result.library.records.length} Einträge)`);
+		toast(t("toast.imported", { name: result.library.name, count: result.library.records.length }));
 	} else if (!result?.cancelled) {
-		toast(result?.error || "Import fehlgeschlagen", true);
+		toast(result?.error || t("toast.importFailed"), true);
 	}
 }
 
@@ -364,19 +372,19 @@ function openRecordModal(library, record) {
 	const meta = el(
 		"div",
 		"detail-meta text-caption1",
-		`Erstellt ${formatDateTime(record.createdAt)} · Geändert ${formatDateTime(record.updatedAt)}`,
+		t("record.meta", { created: formatDateTime(record.createdAt), updated: formatDateTime(record.updatedAt) }),
 	);
 	card.append(meta);
 
 	const actions = el("div", "modal-actions");
 	const deleteBtn = el("button", "btn-ghost modal-danger");
-	deleteBtn.textContent = "Eintrag löschen";
+	deleteBtn.textContent = t("record.deleteButton");
 	deleteBtn.onclick = () =>
-		confirmModal(`"${recordTitle(library, record)}" löschen?`, () => deleteRecord(library, record));
+		confirmModal(t("record.confirmDelete", { title: recordTitle(library, record) }), () => deleteRecord(library, record));
 	actions.append(deleteBtn);
 	actions.append(el("span", "spacer"));
 	const doneBtn = el("button", "btn-filled");
-	doneBtn.textContent = "Fertig";
+	doneBtn.textContent = t("common.done");
 	doneBtn.onclick = closeModal;
 	actions.append(doneBtn);
 	card.append(actions);
@@ -401,7 +409,7 @@ function renderDetailInput(library, record, field) {
 		input.checked = (record.values[field.key] ?? "") !== "";
 		input.onchange = () => saveField(library, record, field.key, input.checked ? "ja" : "");
 		wrap.append(input);
-		wrap.append(el("span", "text-subheadline", "Ja"));
+		wrap.append(el("span", "text-subheadline", t("common.yes")));
 		return wrap;
 	}
 	const textarea = document.createElement("textarea");
@@ -420,7 +428,7 @@ function autoGrow(textarea) {
 
 function formatDateTime(iso) {
 	try {
-		return new Date(iso).toLocaleString();
+		return new Date(iso).toLocaleString(currentLanguage() === "de" ? "de-DE" : "en-US");
 	} catch {
 		return iso;
 	}
@@ -438,7 +446,7 @@ function openLibraryModal(library) {
 
 	const card = el("div", "modal-card");
 	const head = el("div", "modal-head");
-	head.append(el("span", "text-title3 emphasized", library ? "Felder verwalten" : "Neue Bibliothek"));
+	head.append(el("span", "text-title3 emphasized", library ? t("modal.manageFields") : t("modal.newLibrary")));
 	const closeBtn = el("button", "icon-btn plain");
 	closeBtn.append(lucideIcon("x", 16));
 	closeBtn.onclick = closeModal;
@@ -451,11 +459,11 @@ function openLibraryModal(library) {
 	const nameInput = document.createElement("input");
 	nameInput.className = "modal-input";
 	nameInput.type = "text";
-	nameInput.placeholder = "Name der Bibliothek";
+	nameInput.placeholder = t("modal.libraryNamePlaceholder");
 	nameInput.value = library?.name ?? "";
 	card.append(nameInput);
 
-	card.append(el("div", "modal-label text-footnote", "Felder"));
+	card.append(el("div", "modal-label text-footnote", t("modal.fieldsLabel")));
 	const rows = el("div", "field-rows");
 	card.append(rows);
 
@@ -469,7 +477,7 @@ function openLibraryModal(library) {
 
 	const addBtn = el("button", "add-field-btn");
 	addBtn.append(lucideIcon("plus", 14));
-	addBtn.append(el("span", "text-footnote", "Feld hinzufügen"));
+	addBtn.append(el("span", "text-footnote", t("modal.addField")));
 	addBtn.onclick = () => {
 		fieldState.push({ key: "", label: "", type: "text" });
 		renderRows();
@@ -479,9 +487,9 @@ function openLibraryModal(library) {
 	const actions = el("div", "modal-actions");
 	if (library) {
 		const deleteBtn = el("button", "btn-ghost modal-danger");
-		deleteBtn.textContent = "Bibliothek löschen";
+		deleteBtn.textContent = t("modal.deleteLibrary");
 		deleteBtn.onclick = () =>
-			confirmModal(`"${library.name}" und alle ${library.records.length} Einträge löschen?`, async () => {
+			confirmModal(t("modal.confirmDeleteLibrary", { name: library.name, count: library.records.length }), async () => {
 				await postJson(`/api/libraries/${library.id}/delete`, {});
 				closeModal();
 				await loadLibraries();
@@ -490,29 +498,29 @@ function openLibraryModal(library) {
 		actions.append(el("span", "spacer"));
 	}
 	const cancelBtn = el("button", "btn-ghost");
-	cancelBtn.textContent = "Abbrechen";
+	cancelBtn.textContent = t("common.cancel");
 	cancelBtn.onclick = closeModal;
 	actions.append(cancelBtn);
 	const saveBtn = el("button", "btn-filled");
-	saveBtn.textContent = library ? "Speichern" : "Erstellen";
+	saveBtn.textContent = library ? t("common.save") : t("common.create");
 	saveBtn.onclick = async () => {
 		const name = nameInput.value.trim();
-		if (!name) return showError(errorBox, "Bitte einen Namen eingeben.");
+		if (!name) return showError(errorBox, t("error.nameRequired"));
 		const labels = fieldState.filter((f) => f.label.trim() !== "");
-		if (labels.length === 0) return showError(errorBox, "Mindestens ein Feld wird benötigt.");
+		if (labels.length === 0) return showError(errorBox, t("error.fieldRequired"));
 		saveBtn.disabled = true;
 		if (library) {
 			const fields = assignKeys(labels, library.fields);
 			const result = await postJson(`/api/libraries/${library.id}`, { name, fields });
 			saveBtn.disabled = false;
-			if (!result?.ok) return showError(errorBox, result?.error || "Speichern fehlgeschlagen.");
+			if (!result?.ok) return showError(errorBox, result?.error || t("error.saveFailed"));
 			closeModal();
 			await loadLibraries(library.id);
 		} else {
 			const fields = assignKeys(labels, []);
 			const result = await postJson("/api/libraries", { name, fields });
 			saveBtn.disabled = false;
-			if (!result?.ok) return showError(errorBox, result?.error || "Erstellen fehlgeschlagen.");
+			if (!result?.ok) return showError(errorBox, result?.error || t("error.createFailed"));
 			closeModal();
 			await loadLibraries(result.library.id);
 		}
@@ -546,17 +554,17 @@ function fieldRow(field, index, fieldState, rerender) {
 	const row = el("div", "field-row");
 	const labelInput = document.createElement("input");
 	labelInput.type = "text";
-	labelInput.placeholder = "Feldname";
+	labelInput.placeholder = t("modal.fieldNamePlaceholder");
 	labelInput.value = field.label;
 	labelInput.oninput = () => field.label = labelInput.value;
 	row.append(labelInput);
 
 	const select = document.createElement("select");
-	for (const t of FIELD_TYPES) {
+	for (const fieldType of fieldTypes()) {
 		const option = document.createElement("option");
-		option.value = t.value;
-		option.textContent = t.label;
-		if (t.value === field.type) option.selected = true;
+		option.value = fieldType.value;
+		option.textContent = fieldType.label;
+		if (fieldType.value === field.type) option.selected = true;
 		select.append(option);
 	}
 	select.onchange = () => field.type = select.value;
@@ -600,11 +608,11 @@ function confirmModal(message, onConfirm) {
 	card.append(el("div", "text-subheadline", message));
 	const actions = el("div", "modal-actions");
 	const cancelBtn = el("button", "btn-ghost");
-	cancelBtn.textContent = "Abbrechen";
+	cancelBtn.textContent = t("common.cancel");
 	cancelBtn.onclick = closeModal;
 	actions.append(cancelBtn);
 	const confirmBtn = el("button", "btn-filled modal-danger-btn");
-	confirmBtn.textContent = "Löschen";
+	confirmBtn.textContent = t("common.delete");
 	confirmBtn.style.background = "var(--color-red)";
 	confirmBtn.onclick = async () => {
 		closeModal();
