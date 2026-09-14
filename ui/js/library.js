@@ -5,6 +5,14 @@
  */
 import { $, el, lucideIcon, postJson, refreshIcons } from "./util.js";
 import { currentLanguage, onLanguageChange, t } from "./i18n.js";
+import { config, saveConfig } from "./config.js";
+
+/** A stable accent color per library, derived from its id — a small nod to Bento's colorful icons. */
+function libraryColor(id) {
+	let hash = 0;
+	for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) | 0;
+	return `hsl(${Math.abs(hash) % 360}, 65%, 52%)`;
+}
 
 function fieldTypes() {
 	return [
@@ -24,6 +32,25 @@ const libState = {
 	sortKey: null,
 	sortDir: 1,
 };
+
+/** Per-library search/sort, remembered across library switches and app restarts. */
+function loadLibraryView(id) {
+	const saved = config.libraryViews?.[id];
+	return { search: saved?.search ?? "", sortKey: saved?.sortKey ?? null, sortDir: saved?.sortDir ?? 1 };
+}
+
+let viewSaveTimer = null;
+function persistLibraryView(id) {
+	config.libraryViews ??= {};
+	config.libraryViews[id] = { search: libState.search, sortKey: libState.sortKey, sortDir: libState.sortDir };
+	clearTimeout(viewSaveTimer);
+	viewSaveTimer = setTimeout(saveConfig, 400);
+}
+
+function forgetLibraryView(id) {
+	if (config.libraryViews) delete config.libraryViews[id];
+	saveConfig();
+}
 
 export function newLibraryCommand() {
 	openLibraryModal();
@@ -66,9 +93,10 @@ async function loadLibraries(selectId) {
 async function selectLibrary(id) {
 	const result = await fetch(`/api/libraries/${id}`).then((r) => r.json()).catch(() => null);
 	libState.current = result?.ok ? result.library : null;
-	libState.search = "";
-	libState.sortKey = null;
-	libState.sortDir = 1;
+	const view = loadLibraryView(id);
+	libState.search = view.search;
+	libState.sortKey = view.sortKey;
+	libState.sortDir = view.sortDir;
 	renderSidebar();
 	renderLibraryView();
 }
@@ -85,7 +113,10 @@ function renderSidebar() {
 	}
 	for (const library of libState.libraries) {
 		const item = el("button", "lib-item" + (library.id === libState.current?.id ? " active" : ""));
-		item.append(lucideIcon(library.icon || "layout-grid", 16));
+		const tile = el("span", "lib-icon-tile");
+		tile.style.background = libraryColor(library.id);
+		tile.append(lucideIcon(library.icon || "layout-grid", 13, "#fff"));
+		item.append(tile);
 		item.append(el("span", "name text-subheadline", library.name));
 		item.append(el("span", "count text-caption1", String(library.recordCount)));
 		item.onclick = () => selectLibrary(library.id);
@@ -128,6 +159,9 @@ function iconInto(name, size) {
 
 function renderToolbar(library) {
 	const bar = el("div", "lib-toolbar");
+	const dot = el("span", "lib-color-dot");
+	dot.style.background = libraryColor(library.id);
+	bar.append(dot);
 	bar.append(el("span", "lib-title text-headline", library.name));
 	bar.append(el("span", "lib-count text-caption1", t("library.entriesCount", { count: library.records.length })));
 	bar.append(el("span", "spacer"));
@@ -140,6 +174,7 @@ function renderToolbar(library) {
 	input.value = libState.search;
 	input.oninput = () => {
 		libState.search = input.value;
+		persistLibraryView(library.id);
 		const wrap = $("library-view").querySelector(".lib-table-wrap");
 		if (wrap) wrap.replaceWith(renderTableWrap(library));
 	};
@@ -200,6 +235,7 @@ function renderTableWrap(library) {
 				libState.sortKey = field.key;
 				libState.sortDir = 1;
 			}
+			persistLibraryView(library.id);
 			const current = $("library-view").querySelector(".lib-table-wrap");
 			if (current) current.replaceWith(renderTableWrap(library));
 		};
@@ -309,6 +345,7 @@ async function addRecord(library) {
 	// clear any active search/sort so the new (empty) record is actually visible to type into
 	libState.search = "";
 	libState.sortKey = null;
+	persistLibraryView(library.id);
 	renderLibraryView();
 	const wrap = $("library-view").querySelector(".lib-table-wrap tbody");
 	const firstInput = wrap?.lastElementChild?.querySelector("input, textarea");
@@ -491,6 +528,7 @@ function openLibraryModal(library) {
 		deleteBtn.onclick = () =>
 			confirmModal(t("modal.confirmDeleteLibrary", { name: library.name, count: library.records.length }), async () => {
 				await postJson(`/api/libraries/${library.id}/delete`, {});
+				forgetLibraryView(library.id);
 				closeModal();
 				await loadLibraries();
 			});
@@ -552,6 +590,43 @@ function slugify(label, used) {
 
 function fieldRow(field, index, fieldState, rerender) {
 	const row = el("div", "field-row");
+
+	// drag-to-reorder: only the grip is draggable, so the text/select inputs stay normal
+	const grip = el("span", "field-grip");
+	grip.append(lucideIcon("grip-vertical", 14));
+	grip.draggable = true;
+	grip.ondragstart = (event) => {
+		event.dataTransfer.effectAllowed = "move";
+		event.dataTransfer.setData("text/plain", String(index));
+		row.classList.add("dragging");
+	};
+	grip.ondragend = () => row.classList.remove("dragging");
+	row.append(grip);
+
+	let dragDepth = 0;
+	row.ondragover = (event) => {
+		event.preventDefault();
+		event.dataTransfer.dropEffect = "move";
+	};
+	row.ondragenter = () => {
+		dragDepth++;
+		row.classList.add("drag-over");
+	};
+	row.ondragleave = () => {
+		dragDepth = Math.max(0, dragDepth - 1);
+		if (dragDepth === 0) row.classList.remove("drag-over");
+	};
+	row.ondrop = (event) => {
+		event.preventDefault();
+		dragDepth = 0;
+		row.classList.remove("drag-over");
+		const from = Number(event.dataTransfer.getData("text/plain"));
+		if (Number.isNaN(from) || from === index) return;
+		const [moved] = fieldState.splice(from, 1);
+		fieldState.splice(index, 0, moved);
+		rerender();
+	};
+
 	const labelInput = document.createElement("input");
 	labelInput.type = "text";
 	labelInput.placeholder = t("modal.fieldNamePlaceholder");
