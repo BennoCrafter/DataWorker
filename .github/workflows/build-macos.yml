@@ -22,9 +22,13 @@ jobs:
         run: deno task build
 
       - name: Package .app for download
-        run: ditto -c -k --sequesterRsrc --keepParent \
-          "dist/DataWorker.app" \
-          "DataWorker-macOS-arm64.zip"
+        run: |
+          APP_PATH="$(find dist -maxdepth 1 -name '*.app' -print -quit)"
+          echo "Found app: $APP_PATH"
+          test -n "$APP_PATH"
+          ditto -c -k --sequesterRsrc --keepParent \
+            "$APP_PATH" \
+            "DataWorker-macOS-arm64.zip"
 
       - name: Upload .app
         uses: actions/upload-artifact@v4
