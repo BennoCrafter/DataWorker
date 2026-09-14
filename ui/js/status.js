@@ -25,29 +25,6 @@ export function applyStatusLabels(status) {
 		document.title = status.name;
 	}
 	if (status.version) document.querySelector("#topbar .brand").title = `build ${status.version}`;
-
-	// the status pill: the java runtime when that feature is on, else a plain ready indicator
-	if (status.features?.java) {
-		const label = javaLabel(status);
-		if (status.javaProblem) {
-			$("status-label").textContent = status.javaProblem;
-			$("status-dot").style.background = "var(--color-red)";
-		} else if (label) {
-			$("status-label").textContent = label;
-			$("status-dot").style.background = "";
-		} else {
-			$("status-label").textContent = status.componentsReady === false
-				? "waiting for component setup…"
-				: "java not found";
-			$("status-dot").style.background = "var(--color-red)";
-		}
-	} else if (status.features?.components && status.componentsReady === false) {
-		$("status-label").textContent = "waiting for component setup…";
-		$("status-dot").style.background = "var(--color-orange)";
-	} else {
-		$("status-label").textContent = "ready";
-		$("status-dot").style.background = "";
-	}
 }
 
 /** Re-fetches /api/status and refreshes the top-chrome labels. */

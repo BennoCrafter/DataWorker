@@ -34,6 +34,9 @@ export { importCsv as importCsvCommand };
 export async function initLibraryApp() {
 	$("new-library-btn").onclick = () => openLibraryModal();
 	$("import-csv-btn").onclick = importCsv;
+	document.addEventListener("keydown", (event) => {
+		if (event.key === "Escape" && !$("modal-layer").classList.contains("hidden")) closeModal();
+	});
 	await loadLibraries();
 }
 
@@ -221,11 +224,18 @@ function renderRow(library, record) {
 	}
 	const actionsTd = document.createElement("td");
 	actionsTd.className = "actions-col";
+	const actions = el("div", "row-actions");
+	const view = el("button", "icon-btn plain row-delete");
+	view.title = "Eintrag öffnen";
+	view.append(lucideIcon("maximize-2", 14));
+	view.onclick = () => openRecordModal(library, record);
+	actions.append(view);
 	const del = el("button", "icon-btn plain row-delete");
 	del.title = "Eintrag löschen";
 	del.append(lucideIcon("trash-2", 15));
 	del.onclick = () => confirmModal(`"${recordTitle(library, record)}" löschen?`, () => deleteRecord(library, record));
-	actionsTd.append(del);
+	actions.append(del);
+	actionsTd.append(actions);
 	tr.append(actionsTd);
 	return tr;
 }
@@ -320,6 +330,93 @@ async function importCsv() {
 		toast(`"${result.library.name}" importiert (${result.library.records.length} Einträge)`);
 	} else if (!result?.cancelled) {
 		toast(result?.error || "Import fehlgeschlagen", true);
+	}
+}
+
+// ── record detail view ───────────────────────────────────────────────────────
+
+function openRecordModal(library, record) {
+	const layer = $("modal-layer");
+	layer.classList.remove("hidden");
+	layer.replaceChildren();
+	layer.onclick = (event) => {
+		if (event.target === layer) closeModal();
+	};
+
+	const card = el("div", "modal-card");
+	const head = el("div", "modal-head");
+	head.append(el("span", "text-title3 emphasized", recordTitle(library, record)));
+	const closeBtn = el("button", "icon-btn plain");
+	closeBtn.append(lucideIcon("x", 16));
+	closeBtn.onclick = closeModal;
+	head.append(closeBtn);
+	card.append(head);
+
+	const fieldsWrap = el("div", "detail-fields");
+	for (const field of library.fields) {
+		const row = el("div", "detail-field");
+		row.append(el("label", "text-footnote detail-label", field.label));
+		row.append(renderDetailInput(library, record, field));
+		fieldsWrap.append(row);
+	}
+	card.append(fieldsWrap);
+
+	const meta = el(
+		"div",
+		"detail-meta text-caption1",
+		`Erstellt ${formatDateTime(record.createdAt)} · Geändert ${formatDateTime(record.updatedAt)}`,
+	);
+	card.append(meta);
+
+	const actions = el("div", "modal-actions");
+	const deleteBtn = el("button", "btn-ghost modal-danger");
+	deleteBtn.textContent = "Eintrag löschen";
+	deleteBtn.onclick = () =>
+		confirmModal(`"${recordTitle(library, record)}" löschen?`, () => deleteRecord(library, record));
+	actions.append(deleteBtn);
+	actions.append(el("span", "spacer"));
+	const doneBtn = el("button", "btn-filled");
+	doneBtn.textContent = "Fertig";
+	doneBtn.onclick = closeModal;
+	actions.append(doneBtn);
+	card.append(actions);
+
+	layer.append(card);
+	refreshIcons(card);
+}
+
+function renderDetailInput(library, record, field) {
+	if (field.type === "boolean") {
+		const wrap = el("label", "detail-checkbox");
+		const input = document.createElement("input");
+		input.type = "checkbox";
+		input.checked = (record.values[field.key] ?? "") !== "";
+		input.onchange = () => saveField(library, record, field.key, input.checked ? "ja" : "");
+		wrap.append(input);
+		wrap.append(el("span", "text-subheadline", "Ja"));
+		return wrap;
+	}
+	if (field.type === "note") {
+		const textarea = document.createElement("textarea");
+		textarea.className = "modal-input detail-textarea";
+		textarea.rows = 5;
+		textarea.value = record.values[field.key] ?? "";
+		textarea.onblur = () => saveField(library, record, field.key, textarea.value);
+		return textarea;
+	}
+	const input = document.createElement("input");
+	input.type = "text";
+	input.className = "modal-input" + (field.type === "number" || field.type === "currency" ? " num" : "");
+	input.value = record.values[field.key] ?? "";
+	input.onblur = () => saveField(library, record, field.key, input.value);
+	return input;
+}
+
+function formatDateTime(iso) {
+	try {
+		return new Date(iso).toLocaleString();
+	} catch {
+		return iso;
 	}
 }
 
@@ -479,6 +576,9 @@ function closeModal() {
 	const layer = $("modal-layer");
 	layer.classList.add("hidden");
 	layer.replaceChildren();
+	// re-render so any field edits made in a just-closed record-detail view show up in the
+	// table behind it (its cells were rendered before the modal opened, so they're stale)
+	if (libState.current) renderLibraryView();
 }
 
 // ── confirm modal (used instead of window.confirm, which webview may not render) ──

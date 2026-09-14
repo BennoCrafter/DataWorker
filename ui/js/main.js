@@ -1,16 +1,16 @@
 /**
- * Boot and wiring: loads status + config, applies the theme, renders the chrome, and binds
- * the top-chrome buttons, global click-away handling and keyboard shortcuts.
+ * Boot and wiring: loads config, applies the theme, renders the chrome, and binds global
+ * click-away handling and keyboard shortcuts.
  *
- * ADD YOUR APP'S BOOT + WIRING at the marked spots.
+ * The template's component-download / self-update / activity-popover machinery is left out of
+ * this app's wiring on purpose — app.config.ts has those features off, so it would never have
+ * anything to show.
  */
-import { $ } from "./util.js";
+import { refreshIcons } from "./util.js";
 import { setConfig } from "./config.js";
 import { state } from "./state.js";
-import { renderActivity } from "./activity.js";
-import { initUpdate } from "./update.js";
-import { applyStatusLabels, ensureComponents } from "./status.js";
-import { applyTheme, initSettings, openSettings, promptSetup, renderSettings } from "./settings.js";
+import { applyStatusLabels } from "./status.js";
+import { applyTheme, initSettings, renderSettings } from "./settings.js";
 import { ensurePrerequisites } from "./prereqs.js";
 import { runCommand } from "./commands.js";
 import { initLibraryApp } from "./library.js";
@@ -21,47 +21,23 @@ async function init() {
 	setConfig(stored);
 	applyTheme();
 
+	// converts the icons already in index.html (lucide.min.js loads before this module script
+	// runs, so this only needs to happen once, this early) — without it they stay invisible
+	// until something else happens to call refreshIcons() later, e.g. opening Settings
+	refreshIcons();
+
 	// the startup gate (prerequisites feature) — the app only boots once everything passes
 	await ensurePrerequisites();
 
 	const status = await fetch("/api/status").then((r) => r.json());
 	applyStatusLabels(status);
-	renderActivity();
 	initSettings();
 
 	await initLibraryApp();
-
-	if (status.features?.components && status.componentsReady === false) {
-		// first launch (or an aborted setup): components need downloading, which may need
-		// repository credentials. If none are reachable yet, guide the user in Settings
-		// instead of firing a download that can only fail. Otherwise download, then look
-		// for updates.
-		const settings = await fetch("/api/settings").then((r) => r.json()).catch(() => null);
-		if (settings?.ok && settings.repo?.source === "none") {
-			promptSetup(settings);
-		} else {
-			const ok = await ensureComponents();
-			if (ok && status.features?.updates) initUpdate();
-			else if (!ok) openSettings();
-		}
-	} else if (status.features?.updates) {
-		initUpdate(); // background — shows the header Update button when something newer is published
-	}
 }
 init();
 
-$("activity-btn").onclick = (event) => {
-	// stop the bubble: renderActivity() replaces the button's children, detaching event.target,
-	// which would make the document handler below treat this click as "outside" and re-close it
-	event.stopPropagation();
-	state.showActivity = !state.showActivity;
-	renderActivity();
-};
 document.addEventListener("click", (event) => {
-	if (state.showActivity && !event.target.closest("#activity-wrap")) {
-		state.showActivity = false;
-		renderActivity();
-	}
 	// a detached target means a popover-internal click whose handler re-rendered the popover
 	// (replacing the clicked button) — that is never a click-away
 	if (state.showSettings && event.target.isConnected && !event.target.closest("#settings-wrap")) {
@@ -82,7 +58,6 @@ const MOD_SHORTCUTS = {
 	"i": "import-csv",
 };
 const MOD_SHIFT_SHORTCUTS = {
-	"a": "toggle-activity",
 	"n": "new-library",
 };
 

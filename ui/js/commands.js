@@ -6,10 +6,7 @@
  * ADD YOUR APP'S COMMANDS here and wire them into macos-menu.ts / the shortcut tables.
  */
 import { state } from "./state.js";
-import { renderActivity } from "./activity.js";
 import { closeSettings, openSettings, setTheme } from "./settings.js";
-import { appStatus } from "./status.js";
-import { applyUpdates, fetchUpdateCheck, showUpdateButton } from "./update.js";
 import { importCsvCommand, newLibraryCommand, newRecordCommand } from "./library.js";
 
 const COMMANDS = {
@@ -18,20 +15,6 @@ const COMMANDS = {
 	"help": () => openSettings(),
 	"theme-light": () => setTheme("light"),
 	"theme-dark": () => setTheme("dark"),
-	"toggle-activity": () => {
-		state.showActivity = !state.showActivity;
-		renderActivity();
-	},
-	"check-updates": async () => {
-		if (!appStatus.features?.updates) return;
-		const check = await fetchUpdateCheck();
-		if (check?.available) {
-			showUpdateButton(check);
-			applyUpdates();
-		} else {
-			openSettings(); // the settings App section reports "up to date" / errors
-		}
-	},
 	"new-library": () => newLibraryCommand(),
 	"new-record": () => newRecordCommand(),
 	"import-csv": () => importCsvCommand(),
