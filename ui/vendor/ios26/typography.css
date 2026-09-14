@@ -1,0 +1,219 @@
+/* ==========================================================================
+   Typography — iOS 26 (SF Pro type scale)
+   --------------------------------------------------------------------------
+   11 text styles from Large Title (34pt) to Caption 2 (11pt). Each style
+   has a size, line-height, letter-spacing and a default weight. iOS text
+   uses NEGATIVE tracking on most body/title sizes (optical, from SF Pro).
+
+   Exposes both raw tokens (--text-body, --lh-body ...) and .text-* utility
+   classes with `.emphasized`, `.italic`, `.text-loose` modifiers.
+   ========================================================================== */
+
+:root {
+	/* -- Size ------------------------------------------------------------- */
+	--text-large-title: 34px;
+	--text-title1: 28px;
+	--text-title2: 22px;
+	--text-title3: 20px;
+	--text-headline: 17px;
+	--text-body: 17px;
+	--text-callout: 16px;
+	--text-subheadline: 15px;
+	--text-footnote: 13px;
+	--text-caption1: 12px;
+	--text-caption2: 11px;
+
+	/* -- Line height ------------------------------------------------------ */
+	--lh-large-title: 41px;
+	--lh-title1: 34px;
+	--lh-title2: 28px;
+	--lh-title3: 25px;
+	--lh-headline: 22px;
+	--lh-body: 22px;
+	--lh-callout: 21px;
+	--lh-subheadline: 20px;
+	--lh-footnote: 18px;
+	--lh-caption1: 16px;
+	--lh-caption2: 13px;
+
+	/* -- Loose line height (+2px, multiline blocks) ----------------------- */
+	--lh-large-title-loose: 43px;
+	--lh-title1-loose: 36px;
+	--lh-title2-loose: 30px;
+	--lh-title3-loose: 27px;
+	--lh-headline-loose: 24px;
+	--lh-body-loose: 24px;
+	--lh-callout-loose: 23px;
+
+	/* -- Letter spacing (tracking) ---------------------------------------- */
+	--ls-large-title: 0.4px;
+	--ls-title1: 0.38px;
+	--ls-title2: -0.26px;
+	--ls-title3: -0.45px;
+	--ls-headline: -0.43px;
+	--ls-body: -0.43px;
+	--ls-callout: -0.31px;
+	--ls-subheadline: -0.23px;
+	--ls-footnote: -0.08px;
+	--ls-caption1: 0px;
+	--ls-caption2: 0.06px;
+
+	/* -- Weights ---------------------------------------------------------- */
+	--weight-ultralight: 100;
+	--weight-thin: 200;
+	--weight-light: 300;
+	--weight-regular: 400;
+	--weight-medium: 500;
+	--weight-semibold: 600;
+	--weight-bold: 700;
+	--weight-heavy: 800;
+	--weight-black: 900;
+}
+
+/* -- Type styles -------------------------------------------------------- */
+.text-large-title,
+.text-title1,
+.text-title2,
+.text-title3,
+.text-headline,
+.text-body,
+.text-callout,
+.text-subheadline,
+.text-footnote,
+.text-caption1,
+.text-caption2 {
+	font-family: var(--font-family);
+	font-style: normal;
+	margin: 0;
+}
+
+.text-large-title {
+	font-size: var(--text-large-title);
+	line-height: var(--lh-large-title);
+	letter-spacing: var(--ls-large-title);
+	font-weight: var(--weight-regular);
+}
+.text-title1 {
+	font-size: var(--text-title1);
+	line-height: var(--lh-title1);
+	letter-spacing: var(--ls-title1);
+	font-weight: var(--weight-regular);
+}
+.text-title2 {
+	font-size: var(--text-title2);
+	line-height: var(--lh-title2);
+	letter-spacing: var(--ls-title2);
+	font-weight: var(--weight-regular);
+}
+.text-title3 {
+	font-size: var(--text-title3);
+	line-height: var(--lh-title3);
+	letter-spacing: var(--ls-title3);
+	font-weight: var(--weight-regular);
+}
+.text-headline {
+	font-size: var(--text-headline);
+	line-height: var(--lh-headline);
+	letter-spacing: var(--ls-headline);
+	font-weight: var(--weight-semibold);
+}
+.text-body {
+	font-size: var(--text-body);
+	line-height: var(--lh-body);
+	letter-spacing: var(--ls-body);
+	font-weight: var(--weight-regular);
+}
+.text-callout {
+	font-size: var(--text-callout);
+	line-height: var(--lh-callout);
+	letter-spacing: var(--ls-callout);
+	font-weight: var(--weight-regular);
+}
+.text-subheadline {
+	font-size: var(--text-subheadline);
+	line-height: var(--lh-subheadline);
+	letter-spacing: var(--ls-subheadline);
+	font-weight: var(--weight-regular);
+}
+.text-footnote {
+	font-size: var(--text-footnote);
+	line-height: var(--lh-footnote);
+	letter-spacing: var(--ls-footnote);
+	font-weight: var(--weight-regular);
+}
+.text-caption1 {
+	font-size: var(--text-caption1);
+	line-height: var(--lh-caption1);
+	letter-spacing: var(--ls-caption1);
+	font-weight: var(--weight-regular);
+}
+.text-caption2 {
+	font-size: var(--text-caption2);
+	line-height: var(--lh-caption2);
+	letter-spacing: var(--ls-caption2);
+	font-weight: var(--weight-regular);
+}
+
+/* -- Emphasized (bold/semibold per style) ------------------------------- */
+.text-large-title.emphasized,
+.text-title1.emphasized,
+.text-title2.emphasized {
+	font-weight: var(--weight-bold);
+}
+.text-title3.emphasized,
+.text-headline.emphasized,
+.text-body.emphasized,
+.text-callout.emphasized,
+.text-subheadline.emphasized,
+.text-footnote.emphasized,
+.text-caption2.emphasized {
+	font-weight: var(--weight-semibold);
+}
+.text-caption1.emphasized {
+	font-weight: var(--weight-medium);
+}
+
+/* -- Italic ------------------------------------------------------------- */
+.italic {
+	font-style: italic;
+}
+
+/* -- Loose leading ------------------------------------------------------ */
+.text-large-title.text-loose {
+	line-height: var(--lh-large-title-loose);
+}
+.text-title1.text-loose {
+	line-height: var(--lh-title1-loose);
+}
+.text-title2.text-loose {
+	line-height: var(--lh-title2-loose);
+}
+.text-title3.text-loose {
+	line-height: var(--lh-title3-loose);
+}
+.text-headline.text-loose {
+	line-height: var(--lh-headline-loose);
+}
+.text-body.text-loose {
+	line-height: var(--lh-body-loose);
+}
+.text-callout.text-loose {
+	line-height: var(--lh-callout-loose);
+}
+
+/* -- Semantic label colors ---------------------------------------------- */
+.text-label-primary {
+	color: var(--label-primary);
+}
+.text-label-secondary {
+	color: var(--label-secondary);
+}
+.text-label-tertiary {
+	color: var(--label-tertiary);
+}
+.text-label-quaternary {
+	color: var(--label-quaternary);
+}
+.text-tint {
+	color: var(--color-accent);
+}

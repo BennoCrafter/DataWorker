@@ -1,0 +1,138 @@
+/* ==========================================================================
+   Materials — Liquid Glass & background blur
+   --------------------------------------------------------------------------
+   Liquid Glass is the defining iOS 26 material: a floating navigation /
+   controls layer that sits ABOVE content (toolbars, tab bars, floating
+   buttons, sheet chrome). It is NOT a content-background fill and must not
+   be stacked glass-on-glass.
+
+   Apple publishes NO numeric values for the native material — the numbers
+   here APPROXIMATE it for web via backdrop-filter. Sizes: small (7px frost)
+   / medium (12px) / large (14px). Variants: regular / clear.
+   ========================================================================== */
+
+:root {
+	/* -- Liquid Glass frost (backdrop blur) radii ------------------------- */
+	--glass-frost-sm: 7px;
+	--glass-frost-md: 12px;
+	--glass-frost-lg: 14px;
+	--glass-frost-clear: 5px;
+
+	/* -- Liquid Glass surface tints (Light) ------------------------------- */
+	--glass-large-bg: rgba(250, 250, 250, 0.7);
+	--glass-medium-bg: rgba(245, 245, 245, 0.6);
+	--glass-small-bg: rgba(247, 247, 247, 0.75);
+	--glass-small-border: #dddddd;
+	--glass-clear-bg: rgba(255, 255, 255, 0.07);
+	--glass-shadow: 0 8px 40px rgba(0, 0, 0, 0.12);
+	--glass-inner-highlight: inset 0 0.5px 0 0 rgba(255, 255, 255, 0.7);
+
+	/* -- Background materials (opacity + blur) ---------------------------- */
+	--material-chrome-opacity: 0.75;
+	--material-thick-opacity: 0.84;
+	--material-regular-opacity: 0.6;
+	--material-thin-opacity: 0.4;
+	--material-ultrathin-opacity: 0.03;
+	--blur-chrome: 30px;
+	--blur-material: 40px;
+
+	/* -- Scroll edge effect ----------------------------------------------- */
+	--scroll-edge-soft-blur: 10px;
+	--scroll-edge-hard-blur: 30px;
+}
+
+:root[data-theme="dark"],
+:root.dark {
+	--glass-large-bg: rgba(0, 0, 0, 0.8);
+	--glass-medium-bg: rgba(30, 30, 32, 0.6);
+	--glass-small-bg: rgba(20, 20, 22, 0.6);
+	--glass-small-border: rgba(255, 255, 255, 0.08);
+	--glass-clear-bg: rgba(255, 255, 255, 0.06);
+	--glass-shadow: 0 8px 40px rgba(0, 0, 0, 0.5);
+	--glass-inner-highlight: inset 0 0.5px 0 0 rgba(255, 255, 255, 0.12);
+}
+
+/* --------------------------------------------------------------------------
+   Utility classes
+   -------------------------------------------------------------------------- */
+
+/* Liquid Glass — navigation / large chrome (toolbars, tab bars) */
+.liquid-glass,
+.liquid-glass-lg {
+	background-color: var(--glass-large-bg);
+	backdrop-filter: blur(var(--glass-frost-lg)) saturate(180%);
+	-webkit-backdrop-filter: blur(var(--glass-frost-lg)) saturate(180%);
+	box-shadow:
+		var(--glass-shadow),
+		var(--glass-inner-highlight);
+	border-radius: var(--radius-glass-large);
+}
+
+/* Liquid Glass — medium (grouped floating controls) */
+.liquid-glass-md {
+	background-color: var(--glass-medium-bg);
+	backdrop-filter: blur(var(--glass-frost-md)) saturate(180%);
+	-webkit-backdrop-filter: blur(var(--glass-frost-md)) saturate(180%);
+	box-shadow:
+		var(--glass-shadow),
+		var(--glass-inner-highlight);
+	border-radius: var(--radius-glass-medium);
+}
+
+/* Liquid Glass — small (pill buttons, icon buttons) */
+.liquid-glass-sm {
+	background-color: var(--glass-small-bg);
+	backdrop-filter: blur(var(--glass-frost-sm)) saturate(180%);
+	-webkit-backdrop-filter: blur(var(--glass-frost-sm)) saturate(180%);
+	box-shadow:
+		var(--glass-shadow),
+		var(--glass-inner-highlight);
+	border-radius: var(--radius-glass-pill);
+}
+
+/* Liquid Glass — clear (only over media-rich / colorful content) */
+.liquid-glass-clear {
+	background-color: var(--glass-clear-bg);
+	backdrop-filter: blur(var(--glass-frost-clear)) saturate(160%);
+	-webkit-backdrop-filter: blur(var(--glass-frost-clear)) saturate(160%);
+	border-radius: var(--radius-glass-medium);
+}
+
+/* Background materials */
+.material-chrome {
+	background-color: rgba(255, 255, 255, var(--material-chrome-opacity));
+	backdrop-filter: blur(var(--blur-chrome));
+	-webkit-backdrop-filter: blur(var(--blur-chrome));
+}
+.material-thick {
+	background-color: rgba(255, 255, 255, var(--material-thick-opacity));
+	backdrop-filter: blur(var(--blur-material));
+	-webkit-backdrop-filter: blur(var(--blur-material));
+}
+.material-regular {
+	background-color: rgba(255, 255, 255, var(--material-regular-opacity));
+	backdrop-filter: blur(var(--blur-material));
+	-webkit-backdrop-filter: blur(var(--blur-material));
+}
+.material-thin {
+	background-color: rgba(255, 255, 255, var(--material-thin-opacity));
+	backdrop-filter: blur(var(--blur-material));
+	-webkit-backdrop-filter: blur(var(--blur-material));
+}
+
+:root[data-theme="dark"] .material-chrome,
+:root.dark .material-chrome {
+	background-color: rgba(30, 30, 32, var(--material-chrome-opacity));
+}
+:root[data-theme="dark"] .material-thick,
+:root.dark .material-thick {
+	background-color: rgba(30, 30, 32, var(--material-thick-opacity));
+}
+:root[data-theme="dark"] .material-regular,
+:root.dark .material-regular {
+	background-color: rgba(30, 30, 32, var(--material-regular-opacity));
+}
+:root[data-theme="dark"] .material-thin,
+:root.dark .material-thin {
+	background-color: rgba(30, 30, 32, var(--material-thin-opacity));
+}

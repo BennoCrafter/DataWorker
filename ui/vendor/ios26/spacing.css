@@ -1,0 +1,94 @@
+/* ==========================================================================
+   Spacing, Radius & Layout — iOS 26
+   --------------------------------------------------------------------------
+   Base grid is 4px (8pt system, half-steps allowed). Component metrics
+   (nav bar, tab bar, list row heights, touch targets) and the corner-radius
+   scale — including the semantic component radii Apple uses.
+   ========================================================================== */
+
+:root {
+	/* -- Spacing scale (4px base) ----------------------------------------- */
+	--space-0: 0px;
+	--space-1: 4px;
+	--space-2: 8px;
+	--space-3: 12px;
+	--space-4: 16px;
+	--space-5: 20px;
+	--space-6: 24px;
+	--space-7: 28px;
+	--space-8: 32px;
+	--space-10: 40px;
+	--space-12: 48px;
+	--space-16: 64px;
+	--space-20: 80px;
+	--space-24: 96px;
+
+	/* -- Content margins -------------------------------------------------- */
+	--content-margin-iphone: 16px;
+	--content-margin-ipad: 20px;
+	--readable-width: 672px; /* caps body line length on wide layouts */
+
+	/* -- Corner radius scale ---------------------------------------------- */
+	--radius-none: 0px;
+	--radius-xs: 4px;
+	--radius-sm: 8px;
+	--radius-md: 10px;
+	--radius-lg: 12px;
+	--radius-xl: 16px;
+	--radius-xxl: 20px;
+	--radius-full: 9999px;
+
+	/* -- Semantic component radii ----------------------------------------- */
+	--radius-card: 12px;
+	--radius-button: 12px;
+	--radius-alert: 14px;
+	--radius-menu: 14px;
+	--radius-popover: 14px;
+	--radius-context-menu: 14px;
+	--radius-notification: 20px;
+	--radius-sheet-iphone: 34px;
+	--radius-sheet-ipad: 38px;
+	--radius-app-icon-iphone: 26px;
+	--radius-app-icon-ipad: 22px;
+	--radius-widget-sm: 22px;
+	--radius-widget-lg: 26px;
+	/* Liquid Glass control radii: pill for small, fixed for medium/large */
+	--radius-glass-pill: 9999px;
+	--radius-glass-medium: 20px;
+	--radius-glass-large: 24px;
+
+	/* -- Component heights ------------------------------------------------ */
+	--nav-bar-height: 44px;
+	--nav-large-title-height: 96px;
+	--tab-bar-height: 49px;
+	--tab-bar-height-indicator: 83px;
+	--toolbar-height: 44px;
+	--status-bar-height: 54px;
+	--list-row-height-sm: 36px;
+	--list-row-height: 44px;
+	--list-row-height-lg: 58px;
+	--list-row-padding-h: 16px;
+	--list-row-padding-v: 11px;
+	--separator-inset: 16px;
+
+	/* -- Control metrics -------------------------------------------------- */
+	--touch-target-min: 44px;
+	--segmented-height: 32px;
+	--toggle-width: 51px;
+	--toggle-height: 31px;
+	--toggle-thumb: 27px;
+	--slider-track-height: 4px;
+	--slider-thumb: 28px;
+	--stepper-height: 36px;
+	--textfield-height: 44px;
+	--textfield-radius: 10px;
+	--alert-width: 270px;
+	--sheet-grabber-width: 36px;
+	--sheet-grabber-height: 5px;
+
+	/* -- Safe areas (iPhone 16 Pro, Dynamic Island) ----------------------- */
+	--safe-area-top: 59px;
+	--safe-area-bottom: 34px;
+	--safe-area-top-ipad: 24px;
+	--safe-area-bottom-ipad: 20px;
+}

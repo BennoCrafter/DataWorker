@@ -1,0 +1,144 @@
+/* ==========================================================================
+   Colors — iOS 26
+   --------------------------------------------------------------------------
+   System accent palette (12), semantic labels (4 levels), backgrounds
+   (base + grouped), fills (4 levels), grays, separators, overlays.
+   Values are sRGB approximations of Apple's Display-P3 system colors.
+
+   Modes: Light (default) · Dark (via prefers-color-scheme OR [data-theme]).
+   Set [data-theme="light"] / [data-theme="dark"] on <html> to force a mode.
+   ========================================================================== */
+
+:root {
+	/* -- System accent colors (Light) -------------------------------------- */
+	--color-red: #ff383c;
+	--color-orange: #ff8d28;
+	--color-yellow: #ffcc00;
+	--color-green: #34c759;
+	--color-mint: #00c8b3;
+	--color-teal: #00c3d0;
+	--color-cyan: #00c0e8;
+	--color-blue: #0088ff;
+	--color-indigo: #6155f5;
+	--color-purple: #cb30e0;
+	--color-pink: #ff2d55;
+	--color-brown: #ac7f5e;
+
+	/* Primary system accent (tint). iOS default is blue. */
+	--color-accent: var(--color-blue);
+
+	/* -- Labels (text) 4 levels -------------------------------------------- */
+	--label-primary: #000000;
+	--label-secondary: rgba(60, 60, 67, 0.6);
+	--label-tertiary: rgba(60, 60, 67, 0.3);
+	--label-quaternary: rgba(60, 60, 67, 0.18);
+
+	/* -- Backgrounds (base) ------------------------------------------------ */
+	--bg-primary: #ffffff;
+	--bg-secondary: #f2f2f7;
+	--bg-tertiary: #ffffff;
+	--bg-primary-elevated: #ffffff;
+	--bg-secondary-elevated: #f2f2f7;
+	--bg-tertiary-elevated: #ffffff;
+
+	/* -- Backgrounds (grouped — Settings/inset lists) ---------------------- */
+	--bg-grouped-primary: #f2f2f7;
+	--bg-grouped-secondary: #ffffff;
+	--bg-grouped-tertiary: #f2f2f7;
+
+	/* -- Fills (behind controls) 4 levels ---------------------------------- */
+	--fill-primary: rgba(120, 120, 128, 0.2);
+	--fill-secondary: rgba(120, 120, 128, 0.16);
+	--fill-tertiary: rgba(118, 118, 128, 0.12);
+	--fill-quaternary: rgba(116, 116, 128, 0.08);
+
+	/* -- Grays (6-step + black/white) -------------------------------------- */
+	--gray: #8e8e93;
+	--gray-2: #aeaeb2;
+	--gray-3: #c7c7cc;
+	--gray-4: #d1d1d6;
+	--gray-5: #e5e5ea;
+	--gray-6: #f2f2f7;
+	--black: #000000;
+	--white: #ffffff;
+
+	/* -- Separators -------------------------------------------------------- */
+	--separator-opaque: #c6c6c8;
+	--separator: rgba(60, 60, 67, 0.29);
+	--separator-height: 0.5px;
+
+	/* -- Overlays / scrims ------------------------------------------------- */
+	--overlay-default: rgba(0, 0, 0, 0.2);
+	--overlay-alert: rgba(41, 41, 58, 0.23);
+
+	/* -- Semantic control aliases ------------------------------------------ */
+	--tint: var(--color-accent);
+	--destructive: var(--color-red);
+	--success: var(--color-green);
+	--warning: var(--color-orange);
+
+	--surface-page: var(--bg-grouped-primary);
+	--surface-card: var(--bg-grouped-secondary);
+	--surface-raised: var(--bg-secondary-elevated);
+
+	--text-primary: var(--label-primary);
+	--text-secondary: var(--label-secondary);
+	--text-tertiary: var(--label-tertiary);
+	--text-on-accent: #ffffff;
+
+	--control-fill: var(--fill-tertiary);
+	--control-track-off: var(--fill-primary);
+}
+
+/* -- Dark mode (shared definition) -------------------------------------- */
+:root[data-theme="dark"],
+:root.dark {
+	--color-red: #ff453a;
+	--color-orange: #ff9f0a;
+	--color-yellow: #ffd60a;
+	--color-green: #30d158;
+	--color-mint: #63e6e2;
+	--color-teal: #40c8e0;
+	--color-cyan: #64d2ff;
+	--color-blue: #0091ff;
+	--color-indigo: #6d7cff;
+	--color-purple: #db34f2;
+	--color-pink: #ff375f;
+	--color-brown: #ac8e68;
+
+	--label-primary: #ffffff;
+	--label-secondary: rgba(235, 235, 245, 0.6);
+	--label-tertiary: rgba(235, 235, 245, 0.3);
+	--label-quaternary: rgba(235, 235, 245, 0.18);
+
+	--bg-primary: #000000;
+	--bg-secondary: #1c1c1e;
+	--bg-tertiary: #2c2c2e;
+	--bg-primary-elevated: #1c1c1e;
+	--bg-secondary-elevated: #2c2c2e;
+	--bg-tertiary-elevated: #3a3a3c;
+
+	--bg-grouped-primary: #000000;
+	--bg-grouped-secondary: #1c1c1e;
+	--bg-grouped-tertiary: #2c2c2e;
+
+	--fill-primary: rgba(120, 120, 128, 0.36);
+	--fill-secondary: rgba(120, 120, 128, 0.32);
+	--fill-tertiary: rgba(118, 118, 128, 0.24);
+	--fill-quaternary: rgba(118, 118, 128, 0.18);
+
+	--gray: #8e8e93;
+	--gray-2: #636366;
+	--gray-3: #48484a;
+	--gray-4: #3a3a3c;
+	--gray-5: #2c2c2e;
+	--gray-6: #1c1c1e;
+
+	--separator-opaque: #38383a;
+	--separator: rgba(84, 84, 88, 0.6);
+
+	--overlay-default: rgba(0, 0, 0, 0.48);
+	--overlay-alert: rgba(18, 18, 18, 0.56);
+
+	--text-on-accent: #ffffff;
+}

@@ -1,0 +1,27 @@
+/* ==========================================================================
+   Fonts — SF Pro (system font)
+   --------------------------------------------------------------------------
+   iOS 26's system typeface is SF Pro. `-apple-system` / `system-ui` resolve
+   to SF Pro on Apple devices — the platform this app targets — so no webfont
+   is shipped (the upstream design system's CDN-hosted Inter stand-in was
+   dropped to keep the app fully offline; non-Apple platforms fall back to
+   their system UI font).
+   ========================================================================== */
+
+:root {
+	--font-sf:
+		"SF Pro", "SF Pro Text", "SF Pro Display", -apple-system, BlinkMacSystemFont, "system-ui", "Segoe UI", Roboto,
+		Helvetica, Arial, sans-serif;
+	--font-sf-rounded: "SF Pro Rounded", "SF Pro", -apple-system, BlinkMacSystemFont, "system-ui", sans-serif;
+	--font-mono: "SF Mono", ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, monospace;
+
+	/* Alias consumed by typography.css */
+	--font-family: var(--font-sf);
+}
+
+:root {
+	font-optical-sizing: auto;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+	text-rendering: optimizeLegibility;
+}

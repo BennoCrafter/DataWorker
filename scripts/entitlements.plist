@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+	Hardened-runtime entitlements for the Developer ID signature applied by scripts/notarize.sh.
+	The app runs a Deno-compiled binary, so it needs the V8 JIT exceptions, and it loads the
+	`libwebview` native library through Deno FFI (not signed by us) so library validation must be
+	off. These are the standard hardening exceptions for a notarized Deno/Electron-style app and
+	are all accepted for Developer ID distribution.
+-->
+<plist version="1.0">
+<dict>
+	<key>com.apple.security.cs.allow-jit</key>
+	<true/>
+	<key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+	<true/>
+	<key>com.apple.security.cs.disable-library-validation</key>
+	<true/>
+	<key>com.apple.security.cs.allow-dyld-environment-variables</key>
+	<true/>
+</dict>
+</plist>
