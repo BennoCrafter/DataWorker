@@ -73,10 +73,10 @@ export interface AppConfig {
 }
 
 export const APP: AppConfig = {
-	id: "bento",
-	name: "Bento",
-	macBundleId: "com.local.bento",
-	envPrefix: "BENTO",
+	id: "dataworker",
+	name: "DataWorker",
+	macBundleId: "com.local.dataworker",
+	envPrefix: "DATAWORKER",
 	window: { width: 1100, height: 760 },
 	features: {
 		macMenu: true,

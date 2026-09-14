@@ -1,3 +1,11 @@
+/* ── Brand color — the one place to change the app's accent color. Overrides the iOS design
+   tokens' default (blue) everywhere they use --color-accent/--tint (buttons, the brand tile,
+   focus rings, …). Keep this in sync with icon.png if you change either one. ── */
+:root {
+	--brand-color: #e06a3a;
+	--color-accent: var(--brand-color);
+}
+
 /* ── App layout on the iOS 26 design tokens (ui/vendor/ios26) ── */
 * {
 	box-sizing: border-box;
@@ -677,31 +685,55 @@ td.cell-boolean input {
 	line-height: 1.4;
 }
 
-/* ── Record detail view ── */
+/* ── Record detail view — old Bento's card/form view: one boxed field per line, each able to
+   hold more than a single line of text ── */
+.detail-card {
+	width: min(560px, 100%);
+}
 .detail-fields {
 	display: flex;
 	flex-direction: column;
+	gap: 10px;
 }
 .detail-field {
-	margin-bottom: 14px;
+	border: var(--separator-height) solid var(--separator-opaque);
+	border-radius: var(--radius-md);
+	background: var(--bg-primary);
+	padding: 7px 11px 9px;
 }
 .detail-label {
 	display: block;
-	margin-bottom: 6px;
+	margin-bottom: 2px;
 	color: var(--label-secondary);
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	font-size: 10px;
 }
 .detail-textarea {
-	height: auto;
-	min-height: 90px;
+	display: block;
+	width: 100%;
+	min-height: 24px;
+	border: 0;
+	background: transparent;
+	color: var(--label-primary);
+	font: 14px var(--font-sf);
 	line-height: 1.4;
-	padding: 8px 11px;
-	resize: vertical;
+	padding: 0;
+	margin: 0;
+	resize: none;
+	overflow: hidden;
+}
+.detail-textarea:focus {
+	outline: none;
+}
+.detail-field:focus-within {
+	border-color: var(--color-accent);
 }
 .detail-checkbox {
 	display: flex;
 	align-items: center;
 	gap: 8px;
-	height: 36px;
+	height: 24px;
 }
 .detail-checkbox input {
 	width: 17px;
@@ -714,7 +746,7 @@ td.cell-boolean input {
 }
 
 /* ── Toast ── */
-#bento-toast {
+#app-toast {
 	position: fixed;
 	left: 50%;
 	bottom: 24px;
@@ -733,11 +765,11 @@ td.cell-boolean input {
 	overflow-wrap: anywhere;
 	z-index: 90;
 }
-#bento-toast.show {
+#app-toast.show {
 	opacity: 1;
 	transform: translate(-50%, 0);
 }
-#bento-toast.error {
+#app-toast.error {
 	color: var(--color-red);
 }
 .panel {

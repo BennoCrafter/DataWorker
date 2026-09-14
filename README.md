@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="icon.png" alt="Bento logo" height="200" />
+<img src="icon.png" alt="DataWorker logo" height="200" />
 
-# Bento
+# DataWorker
 
 </div>
 
@@ -17,7 +17,7 @@ to edit it. Bento could export a library to CSV — this app can read those expo
 export any library back out the same way (the CSV export button in a library's toolbar).
 
 Everything is stored locally on your Mac — one plain JSON file per library under
-`~/Library/Application Support/bento/libraries/`, nothing is uploaded anywhere.
+`~/Library/Application Support/dataworker/libraries/`, nothing is uploaded anywhere.
 
 ## Getting started
 
@@ -31,7 +31,7 @@ Everything is stored locally on your Mac — one plain JSON file per library und
 ## Project layout
 
 This is built on a Deno + native-webview desktop app template — see `docs/internals.md` for
-how that scaffold works. The Bento-specific pieces:
+how that scaffold works. The DataWorker-specific pieces:
 
 | File                          | What's in it                                                   |
 | ------------------------------ | ---------------------------------------------------------------- |

@@ -1,7 +1,7 @@
 /**
- * The Bento clone itself: library sidebar, the record table, and the new-library / manage-
- * fields / import-CSV modals. Everything lives in this one module — state, rendering, and the
- * API calls — since the app is a single screen.
+ * DataWorker itself: library sidebar, the record table, and the new-library / manage-fields /
+ * import-CSV modals. Everything lives in this one module — state, rendering, and the API
+ * calls — since the app is a single screen.
  */
 import { $, el, lucideIcon, postJson, refreshIcons } from "./util.js";
 
@@ -343,7 +343,7 @@ function openRecordModal(library, record) {
 		if (event.target === layer) closeModal();
 	};
 
-	const card = el("div", "modal-card");
+	const card = el("div", "modal-card detail-card");
 	const head = el("div", "modal-head");
 	head.append(el("span", "text-title3 emphasized", recordTitle(library, record)));
 	const closeBtn = el("button", "icon-btn plain");
@@ -383,8 +383,16 @@ function openRecordModal(library, record) {
 
 	layer.append(card);
 	refreshIcons(card);
+	// initial auto-grow sizing needs layout, so it has to run after the card is in the document
+	for (const textarea of card.querySelectorAll(".detail-textarea")) autoGrow(textarea);
 }
 
+/**
+ * Old Bento's card/form view let you type more than one line into any field, not just the
+ * notes — a title or a remark could wrap to a second or third line right in its box. Every
+ * field here (besides the yes/no checkbox) is an auto-growing textarea for the same reason,
+ * instead of a rigid single-line input.
+ */
 function renderDetailInput(library, record, field) {
 	if (field.type === "boolean") {
 		const wrap = el("label", "detail-checkbox");
@@ -396,20 +404,18 @@ function renderDetailInput(library, record, field) {
 		wrap.append(el("span", "text-subheadline", "Ja"));
 		return wrap;
 	}
-	if (field.type === "note") {
-		const textarea = document.createElement("textarea");
-		textarea.className = "modal-input detail-textarea";
-		textarea.rows = 5;
-		textarea.value = record.values[field.key] ?? "";
-		textarea.onblur = () => saveField(library, record, field.key, textarea.value);
-		return textarea;
-	}
-	const input = document.createElement("input");
-	input.type = "text";
-	input.className = "modal-input" + (field.type === "number" || field.type === "currency" ? " num" : "");
-	input.value = record.values[field.key] ?? "";
-	input.onblur = () => saveField(library, record, field.key, input.value);
-	return input;
+	const textarea = document.createElement("textarea");
+	textarea.className = "detail-textarea";
+	textarea.rows = 1;
+	textarea.value = record.values[field.key] ?? "";
+	textarea.oninput = () => autoGrow(textarea);
+	textarea.onblur = () => saveField(library, record, field.key, textarea.value);
+	return textarea;
+}
+
+function autoGrow(textarea) {
+	textarea.style.height = "auto";
+	textarea.style.height = textarea.scrollHeight + "px";
 }
 
 function formatDateTime(iso) {
@@ -613,10 +619,10 @@ function confirmModal(message, onConfirm) {
 
 let toastTimer = null;
 function toast(message, isError = false) {
-	let node = document.getElementById("bento-toast");
+	let node = document.getElementById("app-toast");
 	if (!node) {
-		node = el("div", "bento-toast");
-		node.id = "bento-toast";
+		node = el("div", "app-toast");
+		node.id = "app-toast";
 		document.body.append(node);
 	}
 	node.textContent = message;
