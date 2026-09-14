@@ -95,3 +95,26 @@ export async function postStream(path, body, onProgress) {
 export function dirName(path) {
 	return path.slice(0, path.lastIndexOf("/")) || path;
 }
+
+/**
+ * Shared mousedown-drag plumbing for resize handles (sidebar width, table columns, row height):
+ * locks the cursor + text selection for the duration, forwards every move to `onMove`, and calls
+ * `onEnd` once on mouseup so the caller can persist the final value.
+ */
+export function startDrag(event, { cursor, onMove, onEnd }) {
+	event.preventDefault();
+	const previousCursor = document.body.style.cursor;
+	const previousUserSelect = document.body.style.userSelect;
+	if (cursor) document.body.style.cursor = cursor;
+	document.body.style.userSelect = "none";
+	const move = (e) => onMove(e);
+	const up = (e) => {
+		document.removeEventListener("mousemove", move);
+		document.removeEventListener("mouseup", up);
+		document.body.style.cursor = previousCursor;
+		document.body.style.userSelect = previousUserSelect;
+		onEnd?.(e);
+	};
+	document.addEventListener("mousemove", move);
+	document.addEventListener("mouseup", up);
+}

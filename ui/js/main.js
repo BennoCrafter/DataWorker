@@ -2,8 +2,8 @@
  * Boot and wiring: loads config, applies the theme, renders the chrome, and binds the update
  * button, global click-away handling and keyboard shortcuts.
  */
-import { $, refreshIcons } from "./util.js";
-import { setConfig } from "./config.js";
+import { $, refreshIcons, startDrag } from "./util.js";
+import { config, saveConfig, setConfig } from "./config.js";
 import { applyStaticTranslations, onLanguageChange } from "./i18n.js";
 import { state } from "./state.js";
 import { renderActivity } from "./activity.js";
@@ -19,6 +19,7 @@ async function init() {
 	applyTheme();
 	applyStaticTranslations();
 	onLanguageChange(() => applyStaticTranslations());
+	initSidebarResize();
 
 	// converts the icons already in index.html (lucide.min.js loads before this module script
 	// runs, so this only needs to happen once, this early) — without it they stay invisible
@@ -35,6 +36,33 @@ async function init() {
 	if (status.features?.updates) initUpdate(); // background — shows the header Update button when something newer is published
 }
 init();
+
+const SIDEBAR_MIN_WIDTH = 160;
+const SIDEBAR_MAX_WIDTH = 480;
+
+/** Drag #sidebar-resizer to resize the library sidebar; the width persists across restarts. */
+function initSidebarResize() {
+	const sidebar = $("sidebar");
+	if (config.sidebarWidth) sidebar.style.width = `${config.sidebarWidth}px`;
+	const handle = $("sidebar-resizer");
+	handle.onmousedown = (event) => {
+		const startX = event.clientX;
+		const startWidth = sidebar.getBoundingClientRect().width;
+		handle.classList.add("resizing");
+		startDrag(event, {
+			cursor: "col-resize",
+			onMove: (e) => {
+				const width = Math.min(SIDEBAR_MAX_WIDTH, Math.max(SIDEBAR_MIN_WIDTH, startWidth + (e.clientX - startX)));
+				sidebar.style.width = `${width}px`;
+			},
+			onEnd: () => {
+				handle.classList.remove("resizing");
+				config.sidebarWidth = Math.round(sidebar.getBoundingClientRect().width);
+				saveConfig();
+			},
+		});
+	};
+}
 
 $("activity-btn").onclick = (event) => {
 	// stop the bubble: renderActivity() replaces the button's children, detaching event.target,

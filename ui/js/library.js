@@ -3,9 +3,14 @@
  * import-CSV modals. Everything lives in this one module — state, rendering, and the API
  * calls — since the app is a single screen.
  */
-import { $, el, lucideIcon, postJson, refreshIcons } from "./util.js";
+import { $, el, lucideIcon, postJson, refreshIcons, startDrag } from "./util.js";
 import { currentLanguage, onLanguageChange, t } from "./i18n.js";
 import { config, saveConfig } from "./config.js";
+
+const DEFAULT_COLUMN_WIDTH = 160;
+const MIN_COLUMN_WIDTH = 64;
+const ACTIONS_COLUMN_WIDTH = 64;
+const MIN_ROW_HEIGHT = 32;
 
 /** A stable accent color per library, derived from its id — a small nod to Bento's colorful icons. */
 function libraryColor(id) {
@@ -42,13 +47,56 @@ function loadLibraryView(id) {
 let viewSaveTimer = null;
 function persistLibraryView(id) {
 	config.libraryViews ??= {};
-	config.libraryViews[id] = { search: libState.search, sortKey: libState.sortKey, sortDir: libState.sortDir };
+	// merge, not replace — keeps this library's columnWidths/rowHeight (set independently below)
+	config.libraryViews[id] = {
+		...config.libraryViews[id],
+		search: libState.search,
+		sortKey: libState.sortKey,
+		sortDir: libState.sortDir,
+	};
 	clearTimeout(viewSaveTimer);
 	viewSaveTimer = setTimeout(saveConfig, 400);
 }
 
 function forgetLibraryView(id) {
 	if (config.libraryViews) delete config.libraryViews[id];
+	saveConfig();
+}
+
+/**
+ * Column widths (px, by field key) the user has dragged for this library. Clamped to
+ * MIN_COLUMN_WIDTH on the way out — self-heals widths an older, buggy build of the resize
+ * handler could persist as 0 (see persistColumnWidth's history).
+ */
+function columnWidths(id) {
+	const widths = config.libraryViews?.[id]?.columnWidths;
+	if (!widths) return {};
+	return Object.fromEntries(Object.entries(widths).map(([key, w]) => [key, Math.max(MIN_COLUMN_WIDTH, w)]));
+}
+
+function persistColumnWidth(id, key, width) {
+	config.libraryViews ??= {};
+	config.libraryViews[id] ??= { search: "", sortKey: null, sortDir: 1 };
+	config.libraryViews[id].columnWidths ??= {};
+	config.libraryViews[id].columnWidths[key] = width;
+	saveConfig();
+}
+
+/** Row heights (px, by record id) the user has dragged for this library — each row independent. */
+function rowHeights(id) {
+	return config.libraryViews?.[id]?.rowHeights ?? {};
+}
+
+function persistRowHeight(id, recordId, height) {
+	config.libraryViews ??= {};
+	config.libraryViews[id] ??= { search: "", sortKey: null, sortDir: 1 };
+	config.libraryViews[id].rowHeights ??= {};
+	config.libraryViews[id].rowHeights[recordId] = height;
+	saveConfig();
+}
+
+function forgetRowHeight(id, recordId) {
+	delete config.libraryViews?.[id]?.rowHeights?.[recordId];
 	saveConfig();
 }
 
@@ -84,7 +132,10 @@ async function loadLibraries(selectId) {
 		libState.current = null;
 		renderLibraryView();
 	} else if (!libState.current && libState.libraries.length > 0) {
-		await selectLibrary(libState.libraries[0].id);
+		// reopen whichever library was open last time, not always the first one in the list
+		const lastId = config.currentLibraryId;
+		const last = lastId && libState.libraries.some((l) => l.id === lastId) ? lastId : libState.libraries[0].id;
+		await selectLibrary(last);
 	} else {
 		renderLibraryView();
 	}
@@ -93,6 +144,10 @@ async function loadLibraries(selectId) {
 async function selectLibrary(id) {
 	const result = await fetch(`/api/libraries/${id}`).then((r) => r.json()).catch(() => null);
 	libState.current = result?.ok ? result.library : null;
+	if (libState.current) {
+		config.currentLibraryId = id;
+		saveConfig();
+	}
 	const view = loadLibraryView(id);
 	libState.search = view.search;
 	libState.sortKey = view.sortKey;
@@ -219,12 +274,32 @@ function renderTableWrap(library) {
 	const table = document.createElement("table");
 	table.className = "lib-table";
 
+	const widths = columnWidths(library.id);
+	const colgroup = document.createElement("colgroup");
+	const cols = {};
+	for (const field of library.fields) {
+		const col = document.createElement("col");
+		col.style.width = `${widths[field.key] ?? DEFAULT_COLUMN_WIDTH}px`;
+		cols[field.key] = col;
+		colgroup.append(col);
+	}
+	const actionsCol = document.createElement("col");
+	actionsCol.style.width = `${ACTIONS_COLUMN_WIDTH}px`;
+	colgroup.append(actionsCol);
+	// no width set — table-layout:fixed gives every unsized column an equal share of whatever
+	// width is left over. Without this, min-width:100% (below wrap-width tables should still
+	// fill the view) forces the browser to stretch it out over the SIZED columns instead,
+	// proportionally widening every column — including ones just dragged narrow — to fill the
+	// gap. This column silently absorbs that leftover space so the real columns stay exact.
+	colgroup.append(document.createElement("col"));
+	table.append(colgroup);
+
 	const typeLabel = Object.fromEntries(fieldTypes().map((ft) => [ft.value, ft.label]));
 	const thead = document.createElement("thead");
 	const headRow = document.createElement("tr");
 	for (const field of library.fields) {
 		const th = document.createElement("th");
-		th.textContent = field.label;
+		th.append(el("span", "th-label", field.label));
 		th.title = typeLabel[field.type] ?? field.type;
 		if (libState.sortKey === field.key) {
 			th.append(el("span", "sort-arrow", libState.sortDir === 1 ? "▲" : "▼"));
@@ -239,17 +314,46 @@ function renderTableWrap(library) {
 			const current = $("library-view").querySelector(".lib-table-wrap");
 			if (current) current.replaceWith(renderTableWrap(library));
 		};
+
+		const col = cols[field.key];
+		const resizeHandle = el("span", "col-resize-handle");
+		resizeHandle.onclick = (event) => event.stopPropagation();
+		resizeHandle.onmousedown = (event) => {
+			event.stopPropagation();
+			const startX = event.clientX;
+			const startWidth = col.getBoundingClientRect().width;
+			// tracked directly rather than re-measured from `col` at drop time — a <col>
+			// element isn't a real rendered box, so its post-drag getBoundingClientRect() can
+			// disagree with the width this handler actually set (e.g. under the min-width:100%
+			// stretch this table used to be subject to), persisting a value nobody dragged to
+			let width = startWidth;
+			resizeHandle.classList.add("resizing");
+			startDrag(event, {
+				cursor: "col-resize",
+				onMove: (e) => {
+					width = Math.max(MIN_COLUMN_WIDTH, startWidth + (e.clientX - startX));
+					col.style.width = `${width}px`;
+				},
+				onEnd: () => {
+					resizeHandle.classList.remove("resizing");
+					persistColumnWidth(library.id, field.key, Math.round(width));
+				},
+			});
+		};
+		th.append(resizeHandle);
 		headRow.append(th);
 	}
 	const actionsTh = document.createElement("th");
 	actionsTh.className = "actions-col";
 	headRow.append(actionsTh);
+	headRow.append(el("th", "spacer-col"));
 	thead.append(headRow);
 	table.append(thead);
 
+	const heights = rowHeights(library.id);
 	const tbody = document.createElement("tbody");
 	for (const record of visibleRecords(library)) {
-		tbody.append(renderRow(library, record));
+		tbody.append(renderRow(library, record, heights[record.id]));
 	}
 	table.append(tbody);
 
@@ -258,11 +362,35 @@ function renderTableWrap(library) {
 	return wrap;
 }
 
-function renderRow(library, record) {
+/** Appends a thin resize-grab strip to the bottom of `td` — dragging it resizes only this row. */
+function attachRowResizeHandle(td, tr, library, record) {
+	const handle = el("div", "row-resize-handle");
+	handle.onmousedown = (event) => {
+		event.stopPropagation();
+		const startY = event.clientY;
+		const startHeight = tr.getBoundingClientRect().height;
+		handle.classList.add("resizing");
+		startDrag(event, {
+			cursor: "row-resize",
+			onMove: (e) => {
+				tr.style.height = `${Math.max(MIN_ROW_HEIGHT, startHeight + (e.clientY - startY))}px`;
+			},
+			onEnd: () => {
+				handle.classList.remove("resizing");
+				persistRowHeight(library.id, record.id, Math.round(tr.getBoundingClientRect().height));
+			},
+		});
+	};
+	td.append(handle);
+}
+
+function renderRow(library, record, height) {
 	const tr = document.createElement("tr");
+	if (height) tr.style.height = `${height}px`;
 	for (const field of library.fields) {
 		const td = document.createElement("td");
 		td.append(renderCell(library, record, field));
+		attachRowResizeHandle(td, tr, library, record);
 		tr.append(td);
 	}
 	const actionsTd = document.createElement("td");
@@ -280,7 +408,10 @@ function renderRow(library, record) {
 		confirmModal(t("record.confirmDelete", { title: recordTitle(library, record) }), () => deleteRecord(library, record));
 	actions.append(del);
 	actionsTd.append(actions);
+	attachRowResizeHandle(actionsTd, tr, library, record);
+
 	tr.append(actionsTd);
+	tr.append(el("td", "spacer-col"));
 	return tr;
 }
 
@@ -358,6 +489,7 @@ async function deleteRecord(library, record) {
 	library.records = library.records.filter((r) => r.id !== record.id);
 	const summary = libState.libraries.find((l) => l.id === library.id);
 	if (summary) summary.recordCount = library.records.length;
+	forgetRowHeight(library.id, record.id);
 	renderLibraryView();
 }
 

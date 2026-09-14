@@ -209,7 +209,11 @@ const listeners = new Set();
 
 /** If config.language is set, returns it; otherwise, returns the browser's language if it starts with "de", otherwise "en". */
 export function currentLanguage() {
-	return config.language === "de" ? "de" : navigator.language?.toLowerCase().startsWith("de") ? "de" : "en";
+  // this is just bad code lol
+  if (config.language == "de" || config.language == "en") {
+    return config.language;
+  }
+  return navigator.language?.toLowerCase().startsWith("de") ? "de" : "en";
 }
 
 export function setLanguage(lang) {

@@ -449,6 +449,28 @@ main {
 	border-right: var(--separator-height) solid var(--separator);
 	background: var(--bg-grouped-primary);
 }
+/* drag to resize the sidebar (see initSidebarResize in main.js) — sits on top of the sidebar's
+   own border so it doesn't add visible width when idle */
+#sidebar-resizer {
+	flex: none;
+	width: 6px;
+	margin-left: -6px;
+	position: relative;
+	z-index: 6;
+	cursor: col-resize;
+}
+#sidebar-resizer:hover::after,
+#sidebar-resizer.resizing::after {
+	content: "";
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	left: 2px;
+	width: 2px;
+	border-radius: 1px;
+	background: var(--color-accent);
+	opacity: 0.6;
+}
 .sidebar-head {
 	flex: none;
 	display: flex;
@@ -494,6 +516,7 @@ main {
 	cursor: pointer;
 	width: 100%;
 	text-align: left;
+	transition: background-color var(--dur-fast) var(--ease-out);
 }
 .lib-item:hover {
 	background: var(--fill-tertiary);
@@ -508,6 +531,16 @@ main {
 	color: inherit;
 	opacity: 0.85;
 }
+.lib-icon-tile {
+	flex: none;
+	width: 22px;
+	height: 22px;
+	border-radius: 7px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.16);
+}
 .lib-item .name {
 	flex: 1;
 	min-width: 0;
@@ -517,10 +550,16 @@ main {
 }
 .lib-item .count {
 	flex: none;
+	min-width: 20px;
+	padding: 1px 6px;
+	border-radius: var(--radius-full);
+	text-align: center;
 	color: var(--label-secondary);
+	background: var(--fill-tertiary);
 }
 .lib-item.active .count {
-	color: rgba(255, 255, 255, 0.8);
+	color: #fff;
+	background: rgba(255, 255, 255, 0.22);
 }
 .sidebar-empty {
 	padding: 10px 8px;
@@ -544,6 +583,13 @@ main {
 	height: 52px;
 	padding: 0 16px;
 	border-bottom: var(--separator-height) solid var(--separator);
+	animation: fade-in var(--dur-normal) var(--ease-out);
+}
+.lib-color-dot {
+	flex: none;
+	width: 10px;
+	height: 10px;
+	border-radius: 50%;
 }
 .lib-toolbar .lib-title {
 	font-weight: 600;
@@ -566,6 +612,12 @@ main {
 	flex: none;
 	width: 220px;
 	color: var(--label-secondary);
+	box-shadow: 0 0 0 1.5px transparent;
+	transition: box-shadow var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out);
+}
+.search-box:focus-within {
+	background: var(--bg-primary);
+	box-shadow: 0 0 0 1.5px var(--color-accent);
 }
 .search-box input {
 	flex: 1;
@@ -586,7 +638,17 @@ main {
 	overflow: auto;
 }
 table.lib-table {
-	width: 100%;
+	/* NOT width:100% — with table-layout:fixed that would force the browser to redistribute
+	   (shrink) every OTHER column's width whenever one column got dragged wider. min-width
+	   lets the table size itself to the sum of the colgroup's widths instead, growing past the
+	   wrap's width when needed (.lib-table-wrap scrolls horizontally) so each column keeps
+	   exactly the width it was dragged to. The other direction (fewer/narrower columns than the
+	   wrap is wide) is handled by the trailing unsized spacer column below, not by this rule —
+	   min-width:100% alone would make table-layout:fixed distribute that slack across the SIZED
+	   columns instead, stretching every one of them past the width it was set to. */
+	min-width: 100%;
+	width: max-content;
+	table-layout: fixed;
 	border-collapse: collapse;
 	font-size: 13px;
 }
@@ -595,7 +657,7 @@ table.lib-table th {
 	top: 0;
 	z-index: 1;
 	text-align: left;
-	padding: 8px 10px;
+	padding: 8px 14px 8px 10px;
 	background: var(--bg-grouped-secondary);
 	border-bottom: var(--separator-height) solid var(--separator);
 	color: var(--label-secondary);
@@ -607,6 +669,13 @@ table.lib-table th {
 table.lib-table th:hover {
 	color: var(--label-primary);
 }
+table.lib-table th .th-label {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	max-width: 100%;
+	display: inline-block;
+	vertical-align: middle;
+}
 table.lib-table th .sort-arrow {
 	margin-left: 4px;
 	opacity: 0.6;
@@ -615,11 +684,35 @@ table.lib-table th.actions-col {
 	cursor: default;
 	width: 64px;
 }
+/* trailing unsized column (see colgroup in library.js) that soaks up any leftover width instead
+   of table-layout:fixed stretching it across the sized columns */
+table.lib-table th.spacer-col,
+table.lib-table td.spacer-col {
+	padding: 0;
+	cursor: default;
+}
+/* dragging the right edge of a header resizes that column (see colgroup in library.js) */
+.col-resize-handle {
+	position: absolute;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	width: 7px;
+	cursor: col-resize;
+}
+.col-resize-handle:hover,
+.col-resize-handle.resizing {
+	background: color-mix(in srgb, var(--color-accent) 45%, transparent);
+}
 table.lib-table td {
+	position: relative;
 	padding: 0;
 	border-bottom: var(--separator-height) solid var(--separator);
 	vertical-align: middle;
-	max-width: 320px;
+	overflow: hidden;
+}
+table.lib-table tbody tr {
+	transition: background-color var(--dur-fast) var(--ease-out);
 }
 table.lib-table tbody tr:hover {
 	background: var(--fill-quaternary);
@@ -635,6 +728,30 @@ table.lib-table tbody tr:hover .row-delete {
 td.actions-col {
 	text-align: center;
 	padding: 4px 6px;
+}
+/* one of these sits at the bottom of every cell in a row, so the grab strip effectively spans
+   the row's full width — dragging any of them resizes just that one row (see attachRowResizeHandle
+   in library.js). Kept fully inside the cell's own box (bottom:0, not negative) so `overflow:
+   hidden` on table.lib-table td doesn't clip it. */
+.row-resize-handle {
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	height: 5px;
+	cursor: row-resize;
+	opacity: 0;
+	pointer-events: none;
+	transition: opacity var(--dur-fast) var(--ease-out);
+}
+tr:hover .row-resize-handle,
+.row-resize-handle.resizing {
+	opacity: 1;
+	pointer-events: auto;
+}
+.row-resize-handle:hover,
+.row-resize-handle.resizing {
+	background: color-mix(in srgb, var(--color-accent) 45%, transparent);
 }
 .row-actions {
 	display: flex;
@@ -681,6 +798,7 @@ td.cell-boolean input {
 	align-items: center;
 	padding: 10px 16px;
 	border-top: var(--separator-height) solid var(--separator);
+	animation: fade-in var(--dur-normal) var(--ease-out);
 }
 .add-record-btn {
 	display: flex;
@@ -753,6 +871,27 @@ td.cell-boolean input {
 	display: flex;
 	align-items: center;
 	gap: 6px;
+	border-radius: var(--radius-md);
+	transition: opacity var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out);
+}
+.field-row.dragging {
+	opacity: 0.4;
+}
+.field-row.drag-over {
+	box-shadow: 0 -2px 0 var(--color-accent);
+}
+.field-grip {
+	flex: none;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 20px;
+	height: 32px;
+	color: var(--label-tertiary);
+	cursor: grab;
+}
+.field-grip:active {
+	cursor: grabbing;
 }
 .field-row input[type="text"] {
 	flex: 1;
@@ -908,6 +1047,7 @@ td.cell-boolean input {
 	padding: 40px;
 	text-align: center;
 	overflow: auto;
+	animation: fade-in var(--dur-normal) var(--ease-out);
 }
 .panel .glyph {
 	width: 96px;
@@ -923,177 +1063,4 @@ td.cell-boolean input {
 	color: var(--label-secondary);
 	margin-top: 4px;
 	line-height: 1.5;
-}
-
-/* ── Prerequisites gate (prerequisites feature) ── */
-#prereq-layer {
-	position: fixed;
-	inset: 0;
-	z-index: 100;
-	display: flex;
-	align-items: flex-start;
-	justify-content: center;
-	background: var(--bg-primary);
-	padding: 32px 24px;
-	overflow-y: auto;
-}
-.prereq-card {
-	width: min(560px, 100%);
-	margin: auto;
-}
-.prereq-sub {
-	color: var(--label-secondary);
-	margin-top: 6px;
-	line-height: 1.45;
-}
-.prereq-list {
-	margin-top: 22px;
-	display: flex;
-	flex-direction: column;
-	gap: 18px;
-}
-.prereq-row {
-	display: flex;
-	gap: 10px;
-}
-.prereq-row .dot {
-	width: 8px;
-	height: 8px;
-	border-radius: 50%;
-	flex: none;
-	margin-top: 6px;
-}
-.prereq-body {
-	min-width: 0;
-	flex: 1;
-}
-.prereq-head {
-	display: flex;
-	align-items: baseline;
-	gap: 8px;
-}
-.prereq-detail {
-	color: var(--label-secondary);
-	font-family: var(--font-mono);
-	overflow-wrap: anywhere;
-}
-.prereq-problem {
-	color: var(--color-red);
-	margin-top: 3px;
-	line-height: 1.45;
-	white-space: pre-wrap;
-	overflow-wrap: anywhere;
-}
-.prereq-hint {
-	color: var(--label-secondary);
-	margin-top: 3px;
-	line-height: 1.45;
-	overflow-wrap: anywhere;
-}
-
-/* a shell command: code block + copy button */
-.prereq-cmd {
-	display: flex;
-	align-items: flex-start;
-	gap: 8px;
-	margin-top: 8px;
-	padding: 8px 8px 8px 11px;
-	border-radius: var(--radius-md);
-	border: var(--separator-height) solid var(--separator);
-	background: var(--fill-quaternary);
-}
-.prereq-cmd-text {
-	flex: 1;
-	min-width: 0;
-	font: 12px/1.5 var(--font-mono);
-	color: var(--label-primary);
-	white-space: pre-wrap;
-	overflow-wrap: anywhere;
-	user-select: text;
-}
-.prereq-copy {
-	flex: none;
-	width: 26px;
-	height: 22px;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	border: 0;
-	border-radius: var(--radius-sm);
-	background: transparent;
-	color: var(--label-secondary);
-	cursor: pointer;
-}
-.prereq-copy:hover {
-	background: var(--fill-tertiary);
-	color: var(--label-primary);
-}
-
-/* "open this page in your browser" */
-.prereq-link {
-	display: inline-flex;
-	align-items: center;
-	gap: 5px;
-	margin-top: 8px;
-	padding: 0;
-	border: 0;
-	background: transparent;
-	color: var(--color-accent);
-	cursor: pointer;
-}
-.prereq-link:hover {
-	text-decoration: underline;
-}
-
-/* paste-a-token / password field */
-.prereq-fix-box {
-	margin-top: 10px;
-}
-.prereq-fix {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-}
-.prereq-input {
-	flex: 1;
-	min-width: 0;
-	height: 32px;
-	padding: 0 10px;
-	border: var(--separator-height) solid var(--separator-opaque);
-	border-radius: var(--radius-md);
-	background: var(--bg-primary);
-	color: var(--label-primary);
-	font: 13px var(--font-mono);
-}
-.prereq-input:focus {
-	outline: 2px solid var(--color-accent);
-	outline-offset: -1px;
-	border-color: transparent;
-}
-.prereq-note {
-	color: var(--label-secondary);
-	margin-top: 5px;
-	line-height: 1.4;
-	overflow-wrap: anywhere;
-}
-.prereq-error {
-	color: var(--color-red);
-	margin-top: 5px;
-	line-height: 1.4;
-	overflow-wrap: anywhere;
-	white-space: pre-wrap;
-}
-.prereq-actions {
-	margin-top: 24px;
-	display: flex;
-	align-items: center;
-	gap: 10px;
-}
-.prereq-btn {
-	display: flex;
-	align-items: center;
-	gap: 6px;
-	height: 32px;
-	padding: 0 14px;
-	flex: none;
 }
