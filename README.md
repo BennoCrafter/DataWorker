@@ -6,15 +6,15 @@
 
 **A simple, local database for macOS — inspired by Bento.**
 
-**DataWorker** is a modern and simple replacement for **Bento**, the discontinued personal database app by FileMaker/Claris.
-
-Bento made it easy to create small, flexible databases without a complicated setup. DataWorker follows the same idea:
-
-
 [Download](https://github.com/BennoCrafter/DataWorker/releases) ·
 [Report an Issue](https://github.com/BennoCrafter/DataWorker/issues)
 
 </div>
+
+**DataWorker** is a modern and simple replacement for **Bento**, the discontinued personal database app by FileMaker/Claris.
+
+Bento made it easy to create small, flexible databases without a complicated setup. DataWorker follows the same idea:
+
 
 ---
 
